@@ -20,6 +20,31 @@ SteeringOutput Seek::CalculateSteering(float DeltaT, ASteeringAgent & Agent)
 	return Steering;
 }
 
+SteeringOutput Wander::CalculateSteering(float DeltaT, ASteeringAgent & Agent)
+{
+	SteeringOutput Steering{};
+	float constexpr MaxSpeed{600.f};
+	Agent.SetMaxLinearSpeed(MaxSpeed);
+	float constexpr CircleRadius{100.f};
+	float constexpr CircleOffset{20.f};
+	FRotator Rotation{Agent.GetRotation()};
+	FVector2D CircleCenter{Agent.GetPosition() + Agent.GetLinearVelocity().Normalize() * (CircleOffset + CircleRadius)};
+	double const RandomAngle{UKismetMathLibrary::RandomFloatInRange(0, 2 * PI)};
+	FVector2D RandomPoint{
+		CircleCenter.X + CircleRadius * sin(RandomAngle),
+		CircleCenter.Y + CircleRadius * cos(RandomAngle)
+	};
+	Steering.LinearVelocity = RandomPoint - Agent.GetPosition();
+	//show a cool thing
+	//add debug rendering
+	FVector CircleCenterLocation{CircleCenter.X, CircleCenter.Y, 10.f};
+	DrawDebugCircle(Agent.GetWorld()
+		, CircleCenterLocation, CircleRadius, 20, FColor::Red,
+		false, -1, 0, 0, 
+		FVector(0,1,0), FVector(1,0,0), false);
+	return Steering;
+}
+
 SteeringOutput Flee::CalculateSteering(float DeltaT, ASteeringAgent & Agent)
 {
 	SteeringOutput Steering{};
