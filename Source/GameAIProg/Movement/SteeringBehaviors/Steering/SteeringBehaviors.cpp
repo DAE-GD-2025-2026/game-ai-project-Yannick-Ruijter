@@ -82,9 +82,24 @@ SteeringOutput Pursuit::CalculateSteering(float DeltaT, ASteeringAgent & Agent)
 	Agent.SetMaxLinearSpeed(MaxSpeed);
 	FVector2D const Difference = Target.Position - Agent.GetPosition();
 	double const DistanceToTarget = Difference.Length();
-	double TimeToReachTarget{Agent.GetMaxLinearSpeed() / DistanceToTarget};
+	double const TimeToReachTarget{Agent.GetMaxLinearSpeed() / DistanceToTarget};
 	FVector2D const PredictedPosition{Target.LinearVelocity * TimeToReachTarget + Target.Position};
 	Steering.LinearVelocity = PredictedPosition - Agent.GetPosition();
+	//show a cool thing
+	//add debug rendering
+	return Steering;
+}
+
+SteeringOutput Evade::CalculateSteering(float DeltaT, ASteeringAgent & Agent)
+{
+	SteeringOutput Steering{};
+	float constexpr MaxSpeed{600.f};
+	Agent.SetMaxLinearSpeed(MaxSpeed);
+	FVector2D const Difference = Target.Position - Agent.GetPosition();
+	double const DistanceToTarget = Difference.Length();
+	double const TimeToReachTarget{Agent.GetMaxLinearSpeed() / DistanceToTarget};
+	FVector2D const PredictedPosition{Target.LinearVelocity * TimeToReachTarget + Target.Position};
+	Steering.LinearVelocity = Agent.GetPosition() - PredictedPosition;
 	//show a cool thing
 	//add debug rendering
 	return Steering;
