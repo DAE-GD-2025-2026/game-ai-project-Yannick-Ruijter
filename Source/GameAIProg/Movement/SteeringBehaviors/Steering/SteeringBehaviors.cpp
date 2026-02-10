@@ -12,7 +12,8 @@
 SteeringOutput Seek::CalculateSteering(float DeltaT, ASteeringAgent & Agent)
 {
 	SteeringOutput Steering{};
-	
+	float MaxSpeed{600.f};
+	Agent.SetMaxLinearSpeed(MaxSpeed);
 	Steering.LinearVelocity = Target.Position - Agent.GetPosition();
 	//show a cool thing
 	//add debug rendering
@@ -22,7 +23,8 @@ SteeringOutput Seek::CalculateSteering(float DeltaT, ASteeringAgent & Agent)
 SteeringOutput Flee::CalculateSteering(float DeltaT, ASteeringAgent & Agent)
 {
 	SteeringOutput Steering{};
-	
+	float MaxSpeed{600.f};
+	Agent.SetMaxLinearSpeed(MaxSpeed);
 	Steering.LinearVelocity = Agent.GetPosition() - Target.Position;
 	//show a cool thing
 	//add debug rendering
@@ -69,7 +71,9 @@ SteeringOutput Arrive::CalculateSteering(float DeltaT, ASteeringAgent & Agent)
 SteeringOutput Face::CalculateSteering(float DeltaT, ASteeringAgent & Agent)
 {
 	SteeringOutput Steering{};
-	//Steering.AngularVelocity = UE::Geometry::Lerp(Agent.GetRotation());
+	FVector2D Difference = Target.Position - Agent.GetPosition();
+	Agent.SetMaxLinearSpeed(0.f);
+	Steering.LinearVelocity = Difference;
 	//show a cool thing
 	//add debug rendering
 	return Steering;
