@@ -1,7 +1,5 @@
 #include "SteeringBehaviors.h"
 
-#include "FrameTypes.h"
-#include "VectorTypes.h"
 #include "GameAIProg/Movement/SteeringBehaviors/SteeringAgent.h"
 #include "DrawDebugHelpers.h"
 
@@ -93,9 +91,15 @@ SteeringOutput Arrive::CalculateSteering(float DeltaT, ASteeringAgent & Agent)
 SteeringOutput Face::CalculateSteering(float DeltaT, ASteeringAgent & Agent)
 {
 	SteeringOutput Steering{};
-	FVector2D const Difference = Target.Position - Agent.GetPosition();
-	Agent.SetMaxLinearSpeed(0.f);
-	Steering.LinearVelocity = Difference;
+	FVector2D Difference = Target.Position - Agent.GetPosition();
+	Difference.Normalize();
+	float const DesiredAngle = FMath::Atan2(Difference.Y, Difference.X);
+	float const CurrentAngle = FMath::Atan2(Agent.GetActorForwardVector().Y, Agent.GetActorForwardVector().X);
+	float const AngleDifference = DesiredAngle - CurrentAngle;
+	float AngularVelocity{-10.f};
+	if (AngleDifference > 0.f) AngularVelocity = -AngularVelocity;
+	else if (AngleDifference == 0.f) AngularVelocity = 0.f;
+	Steering.AngularVelocity = AngularVelocity;
 	//add debug rendering
 	return Steering;
 }
