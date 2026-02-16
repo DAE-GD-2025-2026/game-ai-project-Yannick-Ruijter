@@ -7,6 +7,10 @@
 #include "GameAIProg/Shared/Level_Base.h"
 #include "GameAIProg/Movement/SteeringBehaviors/Steering/SteeringBehaviors.h"
 #include "GameAIProg/Movement/SteeringBehaviors/SteeringAgent.h"
+
+#include <memory>
+#include <vector>
+#include <string>
 #include "Level_CombinedSteering.generated.h"
 
 UCLASS()
@@ -31,6 +35,38 @@ private:
 	//Datamembers
 	bool UseMouseTarget = false;
 	bool CanDebugRender = false;
-
 	
+	enum class BehaviorTypes
+	{
+		Seek,
+		Wander,
+		Flee,
+		Arrive,
+		Evade,
+		Pursuit,
+		Face,
+
+		// @ End
+		Count
+	};
+	
+	struct ImGui_Agent final
+	{
+		ASteeringAgent* Agent{nullptr};
+		std::unique_ptr<ISteeringBehavior> Behavior{nullptr};
+		std::vector<int> SelectedBehaviors{static_cast<int>(BehaviorTypes::Seek)};
+		int SelectedTarget = -1;
+	};
+	
+	std::vector<ImGui_Agent> SteeringAgents{};
+	std::vector<std::string> TargetLabels{};
+	
+	bool AddAgent(const std::vector<BehaviorTypes>& Behaviors = {BehaviorTypes::Wander, BehaviorTypes::Seek}, bool AutoOrient = true);
+	void SetAgentBehavior(ImGui_Agent& Agent);
+	
+	void RefreshTargetLabels();
+	void UpdateTarget(ImGui_Agent& Agent);
+	void RefreshAgentTargets(unsigned int IndexRemoved);
+	std::vector<ASteeringAgent*> Agents;
 };
+
