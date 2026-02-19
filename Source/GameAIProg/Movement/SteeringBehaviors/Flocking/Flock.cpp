@@ -97,7 +97,15 @@ void Flock::RenderNeighborhood()
 #ifndef GAMEAI_USE_SPACE_PARTITIONING
 void Flock::RegisterNeighbors(ASteeringAgent* const pAgent)
 {
- // TODO: Implement
+	for (NrOfNeighbors = 0; auto const& Agent : Agents)
+	{
+		if (Agent == pAgent) continue;
+		if (NeighborhoodRadius < (pAgent->GetPosition() - Agent->GetPosition()).Length())
+		{
+			Neighbors[NrOfNeighbors] = Agent;
+			++NrOfNeighbors;
+		}
+	}
 }
 #endif
 
@@ -105,8 +113,10 @@ FVector2D Flock::GetAverageNeighborPos() const
 {
 	FVector2D avgPosition = FVector2D::ZeroVector;
 
- // TODO: Implement
+	for (int i = 0; i < NrOfNeighbors; ++i)
+		avgPosition += Neighbors[i]->GetPosition();
 	
+	avgPosition /= NrOfNeighbors;
 	return avgPosition;
 }
 
@@ -114,7 +124,10 @@ FVector2D Flock::GetAverageNeighborVelocity() const
 {
 	FVector2D avgVelocity = FVector2D::ZeroVector;
 
- // TODO: Implement
+	for (int i = 0; i < NrOfNeighbors; ++i)
+		avgVelocity += Neighbors[i]->GetLinearVelocity();
+	
+	avgVelocity /= NrOfNeighbors;
 
 	return avgVelocity;
 }

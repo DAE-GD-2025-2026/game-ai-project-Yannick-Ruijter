@@ -29,7 +29,7 @@ public:
 	void Tick(float DeltaTime);
 	void RenderDebug();
 	void ImGuiRender(ImVec2 const& WindowPos, ImVec2 const& WindowSize);
-
+	
 #ifdef GAMEAI_USE_SPACE_PARTITIONING
 	//const TArray<ASteeringAgent*>& GetNeighbors() const { return pPartitionedSpace->GetNeighbors(); }
 	//int GetNrOfNeighbors() const { return pPartitionedSpace->GetNrOfNeighbors(); }
