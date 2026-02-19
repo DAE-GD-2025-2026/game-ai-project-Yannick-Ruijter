@@ -61,8 +61,8 @@ private:
 	std::vector<ImGui_Agent> SteeringAgents{};
 	std::vector<std::string> TargetLabels{};
 	
-	bool AddAgent(const std::vector<BehaviorTypes>& Behaviors = {BehaviorTypes::Wander, BehaviorTypes::Seek}, bool AutoOrient = true);
-	void SetAgentBehavior(ImGui_Agent& Agent);
+	bool AddAgent(bool HasPrioritySteering, const std::vector<BehaviorTypes>& Behaviors = {BehaviorTypes::Wander, BehaviorTypes::Seek}, bool AutoOrient = true);
+	void SetAgentBehavior(ImGui_Agent& Agent, bool HasPrioritySteering);
 	
 	void RefreshTargetLabels();
 	void UpdateTarget(ImGui_Agent& Agent);

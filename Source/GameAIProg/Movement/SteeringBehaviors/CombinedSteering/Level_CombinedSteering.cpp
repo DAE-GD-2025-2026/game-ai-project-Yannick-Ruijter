@@ -15,7 +15,8 @@ ALevel_CombinedSteering::ALevel_CombinedSteering()
 void ALevel_CombinedSteering::BeginPlay()
 {
 	Super::BeginPlay();
-	AddAgent();
+	AddAgent(false);
+	AddAgent(true, {BehaviorTypes::Evade, BehaviorTypes::Wander});
 }
 
 void ALevel_CombinedSteering::BeginDestroy()
@@ -83,12 +84,12 @@ void ALevel_CombinedSteering::Tick(float DeltaTime)
 		ImGui::Spacing();
 		
 		if (ImGui::Button("Add Agent"))
-			AddAgent();
+			AddAgent(false);
 		
 		ImGui::Text("Behavior Weights");
 		ImGui::Spacing();
 	
-		for (auto const& chosenBehaviour: SteeringAgents[0].SelectedBehaviors)
+		for (int i = 0; auto const& chosenBehaviour: SteeringAgents[0].SelectedBehaviors)
 		{
 			std::string ChosenBehaviorName = "";
 			switch (static_cast<BehaviorTypes>(chosenBehaviour))
@@ -116,8 +117,9 @@ void ALevel_CombinedSteering::Tick(float DeltaTime)
 				break;
 			}
 			ImGuiHelpers::ImGuiSliderFloatWithSetter(ChosenBehaviorName.c_str(),
-			static_cast<BlendedSteering*>(SteeringAgents[0].Behavior.get())->GetWeightedBehaviorsRef()[0].Weight, 0.f, 1.f,
-			[this](float InVal) { static_cast<BlendedSteering*>(SteeringAgents[0].Behavior.get())->GetWeightedBehaviorsRef()[0].Weight = InVal; }, "%.2f");
+			static_cast<BlendedSteering*>(SteeringAgents[0].Behavior.get())->GetWeightedBehaviorsRef()[i].Weight, 0.f, 1.f,
+			[this, i](float InVal) { static_cast<BlendedSteering*>(SteeringAgents[0].Behavior.get())->GetWeightedBehaviorsRef()[i].Weight = InVal; }, "%.2f");
+			i++;
 		}
 			
 		 /*ImGuiHelpers::ImGuiSliderFloatWithSetter("Seek",
@@ -132,24 +134,29 @@ void ALevel_CombinedSteering::Tick(float DeltaTime)
 		ImGui::End();
 	}
 #pragma endregion
-	
- // TODO: implement handling mouse click input for seek
+	for (ImGui_Agent& a : SteeringAgents)
+	{
+		if (a.Agent)
+		{
+			UpdateTarget(a);
+		}
+	}
  // TODO: implement Make sure to also evade the wanderer
 }
 
 
-bool ALevel_CombinedSteering::AddAgent(const std::vector<BehaviorTypes>& Behaviors, bool AutoOrient)
+bool ALevel_CombinedSteering::AddAgent(bool HasPrioritySteering, const std::vector<BehaviorTypes>& Behaviors, bool AutoOrient)
 {
 	ImGui_Agent ImGuiAgent = {};
 	ImGuiAgent.Agent = GetWorld()->SpawnActor<ASteeringAgent>(SteeringAgentClass, FVector{0,0,90}, FRotator::ZeroRotator);
 	
 	if (IsValid(ImGuiAgent.Agent))
 	{
-		for (auto const& WeightedBehavior : Behaviors)
-			ImGuiAgent.SelectedBehaviors.push_back(static_cast<int>(WeightedBehavior));
+		for (auto const& Behavior : Behaviors)
+			ImGuiAgent.SelectedBehaviors.push_back(static_cast<int>(Behavior));
 		ImGuiAgent.SelectedTarget = -1; // Mouse
 		
-		SetAgentBehavior(ImGuiAgent);
+		SetAgentBehavior(ImGuiAgent, HasPrioritySteering);
 
 		SteeringAgents.push_back(std::move(ImGuiAgent));
 		
@@ -161,43 +168,51 @@ bool ALevel_CombinedSteering::AddAgent(const std::vector<BehaviorTypes>& Behavio
 	return false;
 }
 
-void ALevel_CombinedSteering::SetAgentBehavior(ImGui_Agent& Agent)
-{
+void ALevel_CombinedSteering::SetAgentBehavior(ImGui_Agent& Agent, bool HasPrioritySteering)
+{	
 	Agent.Behavior.reset();
 	
 	float BehaviorWeight = 1.f / Agent.SelectedBehaviors.size();
-	std::vector<BlendedSteering::WeightedBehavior> WeightedBehaviors;
+	std::vector<BlendedSteering::WeightedBehavior> WeightedBehaviors{};
+	std::vector<ISteeringBehavior*> Behaviors{};
 	for (auto const& BehaviorType: Agent.SelectedBehaviors)
 	{
 		switch (static_cast<BehaviorTypes>(BehaviorType))
 		{
 		case BehaviorTypes::Seek:
 			WeightedBehaviors.push_back({new Seek(), BehaviorWeight});
+			Behaviors.push_back(new Seek{});
 			break;
 		case BehaviorTypes::Flee:
 			WeightedBehaviors.push_back({new Flee(), BehaviorWeight});
+			Behaviors.push_back(new Flee{});
 			break;
 		case BehaviorTypes::Arrive:
 			WeightedBehaviors.push_back({new Arrive(), BehaviorWeight});
+			Behaviors.push_back(new Arrive{});
 			break;
 		case BehaviorTypes::Face:
 			WeightedBehaviors.push_back({new Face(), BehaviorWeight});
+			Behaviors.push_back(new Face{});
 			break;
 		case BehaviorTypes::Evade:
 			WeightedBehaviors.push_back({new Evade(), BehaviorWeight});
+			Behaviors.push_back(new Evade{});
 			break;
 		case BehaviorTypes::Pursuit:
 			WeightedBehaviors.push_back({new Pursuit(), BehaviorWeight});
+			Behaviors.push_back(new Pursuit{});
 			break;
 		case BehaviorTypes::Wander:
 			WeightedBehaviors.push_back({new Wander(), BehaviorWeight});
+			Behaviors.push_back(new Wander{});
 			break;
 		default:
 			assert(false); // Incorrect Agent Behavior gotten during SetAgentBehavior()	
 		}
 	}
-	
-	Agent.Behavior = std::make_unique<BlendedSteering>(WeightedBehaviors);
+	if (HasPrioritySteering) Agent.Behavior = std::make_unique<PrioritySteering>(Behaviors);
+	else Agent.Behavior = std::make_unique<BlendedSteering>(WeightedBehaviors);
 	
 	UpdateTarget(Agent);
 	
