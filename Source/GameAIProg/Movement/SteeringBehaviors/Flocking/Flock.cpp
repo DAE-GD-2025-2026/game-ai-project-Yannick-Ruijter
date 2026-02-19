@@ -15,8 +15,8 @@ Flock::Flock(
 	, pAgentToEvade{pAgentToEvade}
 {
 	Agents.SetNum(FlockSize);
-
- // TODO: initialize the flock and the memory pool
+	for (int i = 0; i < FlockSize; ++i)
+		Agents.Add(pWorld->SpawnActor<ASteeringAgent>(AgentClass));
 }
 
 Flock::~Flock()
@@ -26,6 +26,12 @@ Flock::~Flock()
 
 void Flock::Tick(float DeltaTime)
 {
+	for (auto const& Agent : Agents)
+	{
+		RegisterNeighbors(Agent);
+		Agent->Tick(DeltaTime);
+		//Agent->SetSteeringBehavior()
+	}
  // TODO: update the flock
  // TODO: for every agent:
   // TODO: register the neighbors for this agent (-> fill the memory pool with the neighbors for the currently evaluated agent)
