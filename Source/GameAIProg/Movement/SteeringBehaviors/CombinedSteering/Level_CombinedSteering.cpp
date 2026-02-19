@@ -81,19 +81,53 @@ void ALevel_CombinedSteering::Tick(float DeltaTime)
 		ImGui::Spacing();
 		ImGui::Spacing();
 		ImGui::Spacing();
-	
+		
+		if (ImGui::Button("Add Agent"))
+			AddAgent();
+		
 		ImGui::Text("Behavior Weights");
 		ImGui::Spacing();
-
-		/*
-		 ImGuiHelpers::ImGuiSliderFloatWithSetter("Seek",
-		 	SteeringAgents[0].Behavior->GetWeightedBehaviorsRef()[0].Weight, 0.f, 1.f,
-		 	[this](float InVal) { SteeringAgents[0].Behavior->GetWeightedBehaviorsRef()[0].Weight = InVal; }, "%.2f");
+	
+		for (auto const& chosenBehaviour: SteeringAgents[0].SelectedBehaviors)
+		{
+			std::string ChosenBehaviorName = "";
+			switch (static_cast<BehaviorTypes>(chosenBehaviour))
+			{
+			case BehaviorTypes::Seek:
+				ChosenBehaviorName = "Seek";
+				break;
+			case BehaviorTypes::Arrive:
+				ChosenBehaviorName = "Arrive";
+				break;
+			case BehaviorTypes::Wander:
+				ChosenBehaviorName = "Wander";
+				break;
+			case BehaviorTypes::Face:
+				ChosenBehaviorName = "Face";
+				break;
+			case BehaviorTypes::Evade:
+            	ChosenBehaviorName = "Evade";
+				break;
+			case BehaviorTypes::Flee:
+				ChosenBehaviorName = "Flee";
+				break;
+			case BehaviorTypes::Pursuit:
+				ChosenBehaviorName = "Pursuit";
+				break;
+			}
+			ImGuiHelpers::ImGuiSliderFloatWithSetter(ChosenBehaviorName.c_str(),
+			static_cast<BlendedSteering*>(SteeringAgents[0].Behavior.get())->GetWeightedBehaviorsRef()[0].Weight, 0.f, 1.f,
+			[this](float InVal) { static_cast<BlendedSteering*>(SteeringAgents[0].Behavior.get())->GetWeightedBehaviorsRef()[0].Weight = InVal; }, "%.2f");
+		}
+			
+		 /*ImGuiHelpers::ImGuiSliderFloatWithSetter("Seek",
+		 	static_cast<BlendedSteering*>(SteeringAgents[0].Behavior.get())->GetWeightedBehaviorsRef()[0].Weight, 0.f, 1.f,
+		 	[this](float InVal) { static_cast<BlendedSteering*>(SteeringAgents[0].Behavior.get())->GetWeightedBehaviorsRef()[0].Weight = InVal; }, "%.2f");
 		
 		 ImGuiHelpers::ImGuiSliderFloatWithSetter("Wander",
-		 SteeringAgents[0].Behavior->GetWeightedBehaviorsRef()[1].Weight, 0.f, 1.f,
-		 [this](float InVal) { SteeringAgents[0].Behavior->GetWeightedBehaviorsRef()[1].Weight = InVal; }, "%.2f");
-	*/
+		 static_cast<BlendedSteering*>(SteeringAgents[0].Behavior.get())->GetWeightedBehaviorsRef()[1].Weight, 0.f, 1.f,
+		 [this](float InVal) { static_cast<BlendedSteering*>(SteeringAgents[0].Behavior.get())->GetWeightedBehaviorsRef()[1].Weight = InVal; }, "%.2f");*/
+	
 		//End
 		ImGui::End();
 	}
@@ -138,7 +172,7 @@ void ALevel_CombinedSteering::SetAgentBehavior(ImGui_Agent& Agent)
 		switch (static_cast<BehaviorTypes>(BehaviorType))
 		{
 		case BehaviorTypes::Seek:
-			WeightedBehaviors.push_back({new Seek(), 0.3f});
+			WeightedBehaviors.push_back({new Seek(), BehaviorWeight});
 			break;
 		case BehaviorTypes::Flee:
 			WeightedBehaviors.push_back({new Flee(), BehaviorWeight});
@@ -156,7 +190,7 @@ void ALevel_CombinedSteering::SetAgentBehavior(ImGui_Agent& Agent)
 			WeightedBehaviors.push_back({new Pursuit(), BehaviorWeight});
 			break;
 		case BehaviorTypes::Wander:
-			WeightedBehaviors.push_back({new Wander(), 0.7f});
+			WeightedBehaviors.push_back({new Wander(), BehaviorWeight});
 			break;
 		default:
 			assert(false); // Incorrect Agent Behavior gotten during SetAgentBehavior()	

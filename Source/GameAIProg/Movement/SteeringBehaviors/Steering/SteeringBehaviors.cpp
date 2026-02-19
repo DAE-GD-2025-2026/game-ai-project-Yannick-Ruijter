@@ -26,6 +26,7 @@ SteeringOutput Wander::CalculateSteering(float DeltaT, ASteeringAgent & Agent)
 	float constexpr CircleRadius{100.f};
 	float constexpr CircleOffset{20.f};
 	FRotator Rotation{Agent.GetRotation()};
+	float Temp = Agent.GetRotation();
 	FVector2D CircleCenter{Agent.GetPosition() + Agent.GetLinearVelocity().Normalize() * (CircleOffset + CircleRadius)};
 	double const RandomAngle{UKismetMathLibrary::RandomFloatInRange(0, 2 * PI)};
 	FVector2D RandomPoint{
