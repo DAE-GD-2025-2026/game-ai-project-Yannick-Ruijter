@@ -4,19 +4,36 @@
 
 
 Flock::Flock(
-	UWorld* pWorld,
+	UWorld* pworld,
 	TSubclassOf<ASteeringAgent> AgentClass,
 	int FlockSize,
 	float WorldSize,
-	ASteeringAgent* const pAgentToEvade,
+	ASteeringAgent* const pAgentEvade,
 	bool bTrimWorld)
-	: pWorld{pWorld}
+	: pWorld{pworld}
 	, FlockSize{ FlockSize }
-	, pAgentToEvade{pAgentToEvade}
+	, pAgentToEvade{pAgentEvade}
 {
-	Agents.SetNum(FlockSize);
+	Neighbors.SetNum(15);
+	if (pAgentToEvade == nullptr)
+	{
+		pAgentToEvade = pWorld->SpawnActor<ASteeringAgent>(AgentClass);
+		pAgentToEvade->SetSteeringBehavior(new Wander());
+	}
+	std::vector<BlendedSteering::WeightedBehavior> Behaviors{{new Cohesion(this), 0.4f}};
+	Behaviors.push_back({new Separation(this), 0.5f});
+	Behaviors.push_back({new Alignment(this), 0.33f});
+	pBlendedSteering = std::make_unique<BlendedSteering>(Behaviors);
+	std::vector<ISteeringBehavior*> SteeringBehaviors{new Evade(), pBlendedSteering.get()};
+	pPrioritySteering = std::make_unique<PrioritySteering>(SteeringBehaviors);
 	for (int i = 0; i < FlockSize; ++i)
-		Agents.Add(pWorld->SpawnActor<ASteeringAgent>(AgentClass));
+	{
+		if (ASteeringAgent* Agent = pWorld->SpawnActor<ASteeringAgent>(AgentClass))
+		{
+			Agent->SetSteeringBehavior(pPrioritySteering.get());
+			Agents.Add(Agent);
+		}
+	}
 }
 
 Flock::~Flock()
@@ -26,12 +43,6 @@ Flock::~Flock()
 
 void Flock::Tick(float DeltaTime)
 {
-	for (auto const& Agent : Agents)
-	{
-		RegisterNeighbors(Agent);
-		Agent->Tick(DeltaTime);
-		//Agent->SetSteeringBehavior()
-	}
  // TODO: update the flock
  // TODO: for every agent:
   // TODO: register the neighbors for this agent (-> fill the memory pool with the neighbors for the currently evaluated agent)
