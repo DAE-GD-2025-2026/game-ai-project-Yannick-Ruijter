@@ -236,7 +236,7 @@ void ALevel_SteeringBehaviors::SetAgentBehavior(ImGui_Agent& Agent)
 		break;
 	case BehaviorTypes::Face:
 		Agent.Behavior = std::make_unique<Face>();
-	Agent.Agent->SetIsAutoOrienting(false);
+	    Agent.Agent->SetIsAutoOrienting(false);
 		break;
 	case BehaviorTypes::Evade:
 		Agent.Behavior = std::make_unique<Evade>();

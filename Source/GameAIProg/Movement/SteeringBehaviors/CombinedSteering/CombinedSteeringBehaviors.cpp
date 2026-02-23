@@ -15,7 +15,6 @@ SteeringOutput BlendedSteering::CalculateSteering(float DeltaT, ASteeringAgent& 
 	// TODO: Calculate the weighted average steeringbehavior
 	for (auto const& Behavior : WeightedBehaviors)
 	{
-		Behavior.pBehavior->SetTarget(Target);
 		SteeringOutput CurrentOutput = Behavior.pBehavior->CalculateSteering(DeltaT, Agent);
 		BlendedSteering.LinearVelocity += CurrentOutput.LinearVelocity * Behavior.Weight;
 	}

@@ -9,7 +9,7 @@
 #include "Movement/SteeringBehaviors/CombinedSteering/CombinedSteeringBehaviors.h"
 #include <memory>
 #include "imgui.h"
-#define GAMEAI_USE_SPACE_PARTITIONING
+//#define GAMEAI_USE_SPACE_PARTITIONING
 #ifdef GAMEAI_USE_SPACE_PARTITIONING
 #include "../SpacePartitioning/SpacePartitioning.h"
 #endif
@@ -56,9 +56,8 @@ private:
 	std::unique_ptr<CellSpace> pPartitionedSpace{};
 	int NrOfCellsX{ 10 };
 	TArray<FVector2D> OldPositions{};
-#else // No space partitioning
-	TArray<ASteeringAgent*> Neighbors{};
 #endif // USE_SPACE_PARTITIONING
+	TArray<ASteeringAgent*> Neighbors{};
 	
 	float NeighborhoodRadius{200.f};
 	int NrOfNeighbors{0};
