@@ -146,7 +146,7 @@ SteeringOutput Evade::CalculateSteering(float DeltaT, ASteeringAgent & Agent)
 	Agent.SetMaxLinearSpeed(MaxSpeed);
 	double constexpr StartEvadeDistance{400.f};
 	double constexpr EndEvadeDistance{550.f};
-	FVector2D const Difference = Target.Position - Agent.GetPosition();
+	FVector2D const Difference = Agent.GetPosition() - Target.Position;
 	double const DistanceToTarget = Difference.Length();
 	if (DistanceToTarget > StartEvadeDistance && !m_IsEvading) Steering.IsValid = false;
 	else if (DistanceToTarget > EndEvadeDistance && m_IsEvading)
