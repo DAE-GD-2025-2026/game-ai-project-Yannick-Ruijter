@@ -20,7 +20,9 @@ Flock::Flock(
     ,pWanderBehavior{std::make_unique<Wander>()}
     ,pEvadeBehavior{std::make_unique<Evade>()}
 {
+#ifndef GAMEAI_USE_SPACE_PARTITIONING
 	Neighbors.SetNum(FlockSize);
+#endif
 	
 	if (pAgentToEvade == nullptr)
 	{
@@ -144,10 +146,17 @@ void Flock::RegisterNeighbors(ASteeringAgent* const pAgent)
 }
 #endif
 
+void Flock::RegisterNeighbors(ASteeringAgent* const Agent)
+{
+}
+
 FVector2D Flock::GetAverageNeighborPos() const
 {
 	FVector2D avgPosition = FVector2D::ZeroVector;
-
+#ifdef GAMEAI_USE_SPACE_PARTITIONING
+	const TArray<ASteeringAgent*> Neighbors = GetNeighbors();
+#endif
+	
 	for (int i = 0; i < NrOfNeighbors; ++i)
 		avgPosition += Neighbors[i]->GetPosition();
 	
@@ -158,7 +167,11 @@ FVector2D Flock::GetAverageNeighborPos() const
 FVector2D Flock::GetAverageNeighborVelocity() const
 {
 	FVector2D avgVelocity = FVector2D::ZeroVector;
-
+	
+#ifdef GAMEAI_USE_SPACE_PARTITIONING
+	const TArray<ASteeringAgent*> Neighbors = GetNeighbors();
+#endif
+	
 	for (int i = 0; i < NrOfNeighbors; ++i)
 		avgVelocity += Neighbors[i]->GetLinearVelocity();
 	
