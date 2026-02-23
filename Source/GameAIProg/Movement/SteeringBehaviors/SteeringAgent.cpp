@@ -1,7 +1,6 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "SteeringAgent.h"
-
 #include "AIController.h"
 
 
@@ -38,10 +37,17 @@ void ASteeringAgent::Tick(float DeltaTime)
 			{
 				if (AAIController* AIController = Cast<AAIController>(GetController()))
 				{
-					FRotator currentRotation = GetActorRotation();
-					currentRotation.Yaw += std::clamp(output.AngularVelocity, -1.f, 1.f)
+					float const DeltaYaw = std::clamp(output.AngularVelocity, -1.f, 1.f)
 						* DeltaTime * GetMaxAngularSpeed();
-					SetActorRotation(currentRotation);
+					
+					FRotator CurrentRotation = GetActorRotation();
+					FRotator DeltaRotation{0, DeltaYaw, 0};
+					FRotator const DesiredRotation{CurrentRotation + DeltaRotation};
+					if (!FMath::IsNearlyEqual(CurrentRotation.Yaw, DesiredRotation.Yaw))
+					{
+						AIController->SetControlRotation(DesiredRotation);
+						FaceRotation(DesiredRotation);
+					}
 				}
 			}
 		}

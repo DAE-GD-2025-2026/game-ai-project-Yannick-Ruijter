@@ -22,6 +22,8 @@ Flock::Flock(
 {
 #ifndef GAMEAI_USE_SPACE_PARTITIONING
 	Neighbors.SetNum(FlockSize);
+#else
+	pPartitionedSpace = std::make_unique<CellSpace>(pWorld, WorldSize, WorldSize, 10, 10, FlockSize);
 #endif
 	
 	if (pAgentToEvade == nullptr)
