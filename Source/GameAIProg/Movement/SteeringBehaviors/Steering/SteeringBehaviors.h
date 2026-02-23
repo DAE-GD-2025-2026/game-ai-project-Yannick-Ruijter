@@ -94,4 +94,6 @@ public:
 	
 	//steering
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
+private:
+	bool m_IsEvading{false};
 };
