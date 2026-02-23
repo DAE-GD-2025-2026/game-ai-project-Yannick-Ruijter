@@ -29,6 +29,8 @@ void ALevel_CombinedSteering::BeginDestroy()
 void ALevel_CombinedSteering::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	FTargetData TargetData{SteeringAgents[0].Agent->GetPosition()};
+	SteeringAgents[1].SelectedTarget = 0;
 	
 #pragma region UI
 	//UI
