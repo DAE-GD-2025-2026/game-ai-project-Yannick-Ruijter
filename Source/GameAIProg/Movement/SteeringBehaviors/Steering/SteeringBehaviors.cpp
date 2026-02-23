@@ -7,6 +7,10 @@
 //*******
 // DONE: Do the Week01 assignment :^)
 
+void ISteeringBehavior::SetTarget(const FTargetData& NewTarget)
+{
+	Target = NewTarget;
+}
 SteeringOutput Seek::CalculateSteering(float DeltaT, ASteeringAgent & Agent)
 {
 	SteeringOutput Steering{};

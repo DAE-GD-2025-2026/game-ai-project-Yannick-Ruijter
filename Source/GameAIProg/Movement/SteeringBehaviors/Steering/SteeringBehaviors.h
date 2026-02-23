@@ -15,7 +15,7 @@ public:
 	// Override to implement your own behavior
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) = 0;
 
-	void SetTarget(const FTargetData& NewTarget) { Target = NewTarget; }
+	void SetTarget(const FTargetData& NewTarget);
 	
 	template<class T, std::enable_if_t<std::is_base_of_v<ISteeringBehavior, T>>* = nullptr>
 	T* As()
