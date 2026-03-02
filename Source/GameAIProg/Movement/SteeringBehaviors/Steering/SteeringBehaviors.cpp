@@ -72,7 +72,7 @@ SteeringOutput Arrive::CalculateSteering(float DeltaT, ASteeringAgent & Agent)
 	float constexpr MaxSpeed{600.f};
 	//radia of the circle
 	float constexpr OuterRadius{500.f};
-	float constexpr InnerRadius{150.f};
+	float const InnerRadius{m_Radius};
 	//difference
 	FVector2D Difference{Target.Position - Agent.GetPosition()};
 	//distance
@@ -99,6 +99,11 @@ SteeringOutput Arrive::CalculateSteering(float DeltaT, ASteeringAgent & Agent)
 		false, -1, 0, 0, 
 		FVector(0,1,0), FVector(1,0,0), false);
 	return Steering;
+}
+
+void Arrive::SetTargetRadius(float Radius)
+{
+	m_Radius = Radius;
 }
 
 

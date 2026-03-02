@@ -74,6 +74,9 @@ public:
 	
 	//steering
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent & Agent) override;
+	virtual void SetTargetRadius(float Radius);
+	private:
+	float m_Radius;
 };
 
 class Pursuit: public ISteeringBehavior
