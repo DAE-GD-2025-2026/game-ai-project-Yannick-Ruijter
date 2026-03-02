@@ -146,9 +146,9 @@ namespace GameAI
         return Nodes[NodeId];
     }
 
-    std::unique_ptr<Node>& Graph::GetNode(int NodeId)
+    Node* Graph::GetNode(int NodeId)
     {
-        return Nodes[NodeId];
+        return Nodes[NodeId].get();
     }
 
     int Graph::AddNode(std::unique_ptr<Node> NewNode)

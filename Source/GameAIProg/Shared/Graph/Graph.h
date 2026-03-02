@@ -72,7 +72,7 @@ namespace GameAI
         int GetNodeCount() const;
 
         std::unique_ptr<Node> const& GetNode(int NodeId) const;
-        std::unique_ptr<Node>& GetNode(int NodeId);
+        Node* GetNode(int NodeId);
 
         int AddNode(std::unique_ptr<Node> NewNode);   // takes ownership
         bool RemoveNode(int NodeToRemoveId);

@@ -22,6 +22,8 @@ namespace GameAI
 	private:
 		void VisitAllNodesDFS(const std::vector<Node*>& pNodes, std::vector<bool>& visited, int startIndex) const;
 		bool IsConnected() const;
+		
+		void FindChildConnections(Node* node, int notesFound[], int& nrOfNotesFound) const;
 
 		Graph* m_pGraph;
 	};
@@ -34,7 +36,7 @@ namespace GameAI
 	inline Eulerianity EulerianPath::IsEulerian() const
 	{
 		// TODO If the graph is not connected, there can be no Eulerian Trail
-
+		if (!IsConnected()) return Eulerianity::notEulerian;
 		// TODO Count nodes with odd degree 
 
 		// TODO A connected graph with more than 2 nodes with an odd degree (an odd amount of connections) is not Eulerian
@@ -56,7 +58,7 @@ namespace GameAI
 		int currentNodeId{ Graphs::InvalidNodeId };
 		
 		// TODO Check if there can be an Euler path
-		// TODO If this graph is not eulerian, return the empty path
+		if (!IsConnected()) return Path;
 		
 		// TODO Start algorithm loop
 		std::stack<int> nodeStack;
@@ -79,11 +81,36 @@ namespace GameAI
 		std::vector<Node*> Nodes = m_pGraph->GetActiveNodes();
 		if (Nodes.size() == 0)
 			return false;
-
+		
+		int NotesFound[Nodes.size()]{};
+		int NrOfNotesFound{ 1 };
 		// TODO choose a starting node
-		
+		NotesFound[Nodes[0]->GetId()] = 1;
+		auto connections = m_pGraph->FindConnectionsFrom(Nodes[0]->GetId());
 		// TODO start a depth-first-search traversal from the node that has at least one connection
-		
-		// TODO if a node was never visited, this graph is not connected
+		for (auto connection : connections)
+		{
+			if (NotesFound[connection->GetToId()] == 0)
+			{
+				++NrOfNotesFound;
+				FindChildConnections(Nodes[connection->GetToId()], NotesFound, NrOfNotesFound);
+			}
+			NotesFound[connection->GetToId()] = 1;
+		}
+		return NrOfNotesFound == Nodes.size();
+	}
+	
+	inline void EulerianPath::FindChildConnections(Node* node, int notesFound[], int& nrOfNotesFound) const
+	{
+		auto Connections = m_pGraph->FindConnectionsFrom(node->GetId());
+		for (auto connection : Connections)
+		{
+			if (notesFound[connection->GetToId()] == 0)
+			{
+				++nrOfNotesFound;
+				FindChildConnections(m_pGraph->GetNode(connection->GetToId()), notesFound, nrOfNotesFound);
+				notesFound[connection->GetToId()] = 1;
+			}
+		}
 	}
 }
