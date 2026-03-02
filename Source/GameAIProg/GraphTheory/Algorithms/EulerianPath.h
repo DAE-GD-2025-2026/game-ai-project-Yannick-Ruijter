@@ -20,10 +20,8 @@ namespace GameAI
 		std::vector<Node*> FindPath(Eulerianity& eulerianity) const;
 
 	private:
-		void VisitAllNodesDFS(const std::vector<Node*>& pNodes, std::vector<bool>& visited, int startIndex) const;
+		void VisitAllNodesDFS(Node* node, std::vector<bool>& notesFound, int& nrOfNotesFound) const;
 		bool IsConnected() const;
-		
-		void FindChildConnections(Node* node, std::vector<bool>& notesFound, int& nrOfNotesFound) const;
 
 		Graph* m_pGraph;
 	};
@@ -56,23 +54,46 @@ namespace GameAI
 		std::vector<Node*> Nodes = graphCopy.GetActiveNodes();
 		int currentNodeId{ Graphs::InvalidNodeId };
 		
-		// TODO Check if there can be an Euler path
-		if (!IsConnected()) return Path;
+		if (IsEulerian() == Eulerianity::notEulerian) return Path;
 		
-		// TODO Start algorithm loop
 		std::stack<int> nodeStack;
-
+		
+		Node* currentNode = Nodes[0];
+		bool pathFound{ false };
+		while (!pathFound)
+		{
+			nodeStack.push(currentNode->GetId());
+			std::vector<Connection*> outGoingConnections = graphCopy.FindConnectionsFrom(currentNode->GetId());
+			if (outGoingConnections.size() == 0)
+			{
+				std::vector<Connection*> incomingConnections = graphCopy.FindConnectionsTo(currentNode->GetId());
+				Path.push_back(currentNode);
+				nodeStack.pop();
+				currentNode = graphCopy.GetNode(incomingConnections[0]->GetFromId());
+				graphCopy.RemoveConnection(incomingConnections[0]);
+			}
+			else
+			{
+				currentNode = graphCopy.GetNode(outGoingConnections[0]->GetFromId());
+			}
+		}
+		
 		std::reverse(Path.begin(), Path.end());
 		return Path;
 	}
 
-	inline void EulerianPath::VisitAllNodesDFS(const std::vector<Node*>& Nodes, std::vector<bool>& visited, int startIndex ) const
+	inline void EulerianPath::VisitAllNodesDFS(Node* node, std::vector<bool>& notesFound, int& nrOfNotesFound) const
 	{
-		// TODO Mark the visited node
-
-		// TODO Ask the graph for the connections from that node
-		// TODO recursively visit any valid connected nodes that were not visited before
-		// TODO Tip: use an index-based for-loop to find the correct index
+		auto Connections = m_pGraph->FindConnectionsFrom(node->GetId());
+		for (auto connection : Connections)
+		{
+			if (!notesFound[connection->GetToId()])
+			{
+				++nrOfNotesFound;
+				VisitAllNodesDFS(m_pGraph->GetNode(connection->GetToId()), notesFound, nrOfNotesFound);
+				notesFound[connection->GetToId()] = true;
+			}
+		}
 	}
 
 	inline bool EulerianPath::IsConnected() const
@@ -83,33 +104,17 @@ namespace GameAI
 		
 		std::vector<bool> visited(Nodes.size(), false);
 		int NrOfNotesFound{ 1 };
-		// TODO choose a starting node
 		visited[Nodes[0]->GetId()] = true;
 		auto connections = m_pGraph->FindConnectionsFrom(Nodes[0]->GetId());
-		// TODO start a depth-first-search traversal from the node that has at least one connection
 		for (auto connection : connections)
 		{
 			if (!visited[connection->GetToId()])
 			{
 				++NrOfNotesFound;
-				FindChildConnections(Nodes[connection->GetToId()], visited, NrOfNotesFound);
+				VisitAllNodesDFS(Nodes[connection->GetToId()], visited, NrOfNotesFound);
 			}
 			visited[connection->GetToId()] = true;
 		}
 		return NrOfNotesFound == Nodes.size();
-	}
-	
-	inline void EulerianPath::FindChildConnections(Node* node, std::vector<bool>& notesFound, int& nrOfNotesFound) const
-	{
-		auto Connections = m_pGraph->FindConnectionsFrom(node->GetId());
-		for (auto connection : Connections)
-		{
-			if (!notesFound[connection->GetToId()])
-			{
-				++nrOfNotesFound;
-				FindChildConnections(m_pGraph->GetNode(connection->GetToId()), notesFound, nrOfNotesFound);
-				notesFound[connection->GetToId()] = true;
-			}
-		}
 	}
 }
