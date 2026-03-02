@@ -39,7 +39,7 @@ protected:
 	UBoxComponent* TrimVolume{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float TrimWorldSize{1000.f};
+	float TrimWorldSize{5000.f};
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

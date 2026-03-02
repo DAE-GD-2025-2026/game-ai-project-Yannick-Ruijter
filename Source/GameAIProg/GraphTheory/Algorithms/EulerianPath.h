@@ -84,6 +84,7 @@ namespace GameAI
 
 	inline void EulerianPath::VisitAllNodesDFS(Node* node, std::vector<bool>& notesFound, int& nrOfNotesFound) const
 	{
+		//fix this
 		auto Connections = m_pGraph->FindConnectionsFrom(node->GetId());
 		for (auto connection : Connections)
 		{
