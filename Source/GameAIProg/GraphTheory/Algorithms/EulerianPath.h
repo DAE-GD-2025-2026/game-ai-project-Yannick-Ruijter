@@ -23,7 +23,7 @@ namespace GameAI
 		void VisitAllNodesDFS(const std::vector<Node*>& pNodes, std::vector<bool>& visited, int startIndex) const;
 		bool IsConnected() const;
 		
-		void FindChildConnections(Node* node, int notesFound[], int& nrOfNotesFound) const;
+		void FindChildConnections(Node* node, std::vector<bool>& notesFound, int& nrOfNotesFound) const;
 
 		Graph* m_pGraph;
 	};
@@ -35,18 +35,17 @@ namespace GameAI
 
 	inline Eulerianity EulerianPath::IsEulerian() const
 	{
-		// TODO If the graph is not connected, there can be no Eulerian Trail
 		if (!IsConnected()) return Eulerianity::notEulerian;
-		// TODO Count nodes with odd degree 
+		int OddNotesFound{ 0 };
+		for (auto Node : m_pGraph->GetActiveNodes())
+		{
+			if (m_pGraph->FindConnectionsFrom(Node->GetId()).size() % 2 == 1) ++OddNotesFound;
+			if (OddNotesFound > 2) return Eulerianity::semiEulerian;
+		}
 
-		// TODO A connected graph with more than 2 nodes with an odd degree (an odd amount of connections) is not Eulerian
-
-		// TODO A connected graph with exactly 2 nodes with an odd degree is Semi-Eulerian (unless there are only 2 nodes)
-		// TODO An Euler trail can be made, but only starting and ending in these 2 nodes
-
-		// TODO A connected graph with no odd nodes is Eulerian
+		if (OddNotesFound == 2 && m_pGraph->GetNodes().size() != 2) return Eulerianity::semiEulerian;
 		
-		return Eulerianity::notEulerian;
+		return Eulerianity::eulerian;
 	}
 
 	inline std::vector<Node*> EulerianPath::FindPath(Eulerianity& eulerianity) const
@@ -82,34 +81,34 @@ namespace GameAI
 		if (Nodes.size() == 0)
 			return false;
 		
-		int NotesFound[Nodes.size()]{};
+		std::vector<bool> visited(Nodes.size(), false);
 		int NrOfNotesFound{ 1 };
 		// TODO choose a starting node
-		NotesFound[Nodes[0]->GetId()] = 1;
+		visited[Nodes[0]->GetId()] = true;
 		auto connections = m_pGraph->FindConnectionsFrom(Nodes[0]->GetId());
 		// TODO start a depth-first-search traversal from the node that has at least one connection
 		for (auto connection : connections)
 		{
-			if (NotesFound[connection->GetToId()] == 0)
+			if (!visited[connection->GetToId()])
 			{
 				++NrOfNotesFound;
-				FindChildConnections(Nodes[connection->GetToId()], NotesFound, NrOfNotesFound);
+				FindChildConnections(Nodes[connection->GetToId()], visited, NrOfNotesFound);
 			}
-			NotesFound[connection->GetToId()] = 1;
+			visited[connection->GetToId()] = true;
 		}
 		return NrOfNotesFound == Nodes.size();
 	}
 	
-	inline void EulerianPath::FindChildConnections(Node* node, int notesFound[], int& nrOfNotesFound) const
+	inline void EulerianPath::FindChildConnections(Node* node, std::vector<bool>& notesFound, int& nrOfNotesFound) const
 	{
 		auto Connections = m_pGraph->FindConnectionsFrom(node->GetId());
 		for (auto connection : Connections)
 		{
-			if (notesFound[connection->GetToId()] == 0)
+			if (!notesFound[connection->GetToId()])
 			{
 				++nrOfNotesFound;
 				FindChildConnections(m_pGraph->GetNode(connection->GetToId()), notesFound, nrOfNotesFound);
-				notesFound[connection->GetToId()] = 1;
+				notesFound[connection->GetToId()] = true;
 			}
 		}
 	}
