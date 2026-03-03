@@ -46,7 +46,6 @@ void ALevel_GraphTheory::BeginPlay()
 	auto index1 = Graph.AddNode(NodeFactory.CreateNode(FVector2D{0.0f, 0.0f}));
 	auto index2 = Graph.AddNode(NodeFactory.CreateNode(FVector2D{100.f, 100.f}));
 
-	Graph.AddConnection(std::make_unique<Connection>(index1, index2));
 	// Spawn the Agent
 	Agent = GetWorld()->SpawnActor<ASteeringAgent>(SteeringAgentClass, 
 	FVector{0,0,90}, FRotator::ZeroRotator);
@@ -102,7 +101,7 @@ void ALevel_GraphTheory::Tick(float DeltaTime)
 #pragma endregion UI
 	
 	Renderer.RenderGraph(Graph);
-	
+	Agent->Tick(DeltaTime);
 	// TODO Check if the graph has updated
 	if (!PlayerGraphEditor->HasGraphUpdated()) return;
 	Graph.GetNodes();

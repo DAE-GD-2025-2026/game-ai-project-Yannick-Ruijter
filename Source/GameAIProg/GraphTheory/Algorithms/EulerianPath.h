@@ -38,7 +38,7 @@ namespace GameAI
 		for (auto Node : m_pGraph->GetActiveNodes())
 		{
 			if (m_pGraph->FindConnectionsFrom(Node->GetId()).size() % 2 == 1) ++OddNotesFound;
-			if (OddNotesFound > 2) return Eulerianity::semiEulerian;
+			if (OddNotesFound > 2) return Eulerianity::notEulerian;
 		}
 
 		if (OddNotesFound == 2 && m_pGraph->GetNodes().size() != 2) return Eulerianity::semiEulerian;
@@ -54,30 +54,53 @@ namespace GameAI
 		std::vector<Node*> Nodes = graphCopy.GetActiveNodes();
 		int currentNodeId{ Graphs::InvalidNodeId };
 		
-		if (IsEulerian() == Eulerianity::notEulerian) return Path;
+		if (eulerianity == Eulerianity::notEulerian) return Path;
 		
 		std::stack<int> nodeStack;
 		
 		Node* currentNode = Nodes[0];
+		Node* previousNode = nullptr;
 		bool pathFound{ false };
-		while (!pathFound)
+		if (eulerianity == Eulerianity::semiEulerian)
 		{
-			nodeStack.push(currentNode->GetId());
-			std::vector<Connection*> outGoingConnections = graphCopy.FindConnectionsFrom(currentNode->GetId());
-			if (outGoingConnections.size() == 0)
+			for (auto node : Nodes)
 			{
-				std::vector<Connection*> incomingConnections = graphCopy.FindConnectionsTo(currentNode->GetId());
-				Path.push_back(currentNode);
-				nodeStack.pop();
-				currentNode = graphCopy.GetNode(incomingConnections[0]->GetFromId());
-				graphCopy.RemoveConnection(incomingConnections[0]);
-			}
-			else
-			{
-				currentNode = graphCopy.GetNode(outGoingConnections[0]->GetFromId());
+				if (graphCopy.FindConnectionsFrom(node->GetId()).size() % 2 == 1)
+				{
+					currentNode = node;
+				}
 			}
 		}
 		
+		while (!pathFound)
+		{
+			auto Connections = graphCopy.FindConnectionsFrom(currentNode->GetId());
+			nodeStack.push(currentNode->GetId());
+			if (Connections.size() == 1 && previousNode != nullptr)
+			{
+				nodeStack.pop();
+				Path.emplace_back(currentNode);
+				previousNode = currentNode;
+				currentNode = graphCopy.GetNode(Connections[0]->GetToId());
+				graphCopy.RemoveConnection(Connections[0]);
+			}
+			else if (Connections.size() > 0)
+			{
+				for (auto connection : Connections)
+				{
+					if (previousNode != graphCopy.GetNode(connection->GetToId()))
+					{
+						previousNode = currentNode;
+						currentNode = graphCopy.GetNode(connection->GetToId());
+					}
+				}
+			}
+			else
+			{
+				Path.emplace_back(currentNode);
+				pathFound = true;
+			}
+		}
 		std::reverse(Path.begin(), Path.end());
 		return Path;
 	}
@@ -91,14 +114,15 @@ namespace GameAI
 			if (!notesFound[connection->GetToId()])
 			{
 				++nrOfNotesFound;
-				VisitAllNodesDFS(m_pGraph->GetNode(connection->GetToId()), notesFound, nrOfNotesFound);
 				notesFound[connection->GetToId()] = true;
+				VisitAllNodesDFS(m_pGraph->GetNode(connection->GetToId()), notesFound, nrOfNotesFound);
 			}
 		}
 	}
 
 	inline bool EulerianPath::IsConnected() const
 	{
+		//TODO fix this
 		std::vector<Node*> Nodes = m_pGraph->GetActiveNodes();
 		if (Nodes.size() == 0)
 			return false;
