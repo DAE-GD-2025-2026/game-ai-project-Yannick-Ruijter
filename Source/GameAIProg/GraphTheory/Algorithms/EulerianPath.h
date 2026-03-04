@@ -68,6 +68,7 @@ namespace GameAI
 				if (graphCopy.FindConnectionsFrom(node->GetId()).size() % 2 == 1)
 				{
 					currentNode = node;
+					break;
 				}
 			}
 		}
@@ -75,29 +76,21 @@ namespace GameAI
 		while (!pathFound)
 		{
 			auto Connections = graphCopy.FindConnectionsFrom(currentNode->GetId());
-			nodeStack.push(currentNode->GetId());
-			if (Connections.size() == 1 && previousNode != nullptr)
+			if (Connections.size() == 0 && nodeStack.size() > 0)
 			{
+				Path.emplace_back(m_pGraph->GetNode(currentNode->GetId()));
+				currentNode = graphCopy.GetNode(nodeStack.top());
 				nodeStack.pop();
-				Path.emplace_back(currentNode);
-				previousNode = currentNode;
-				currentNode = graphCopy.GetNode(Connections[0]->GetToId());
-				graphCopy.RemoveConnection(Connections[0]);
 			}
 			else if (Connections.size() > 0)
 			{
-				for (auto connection : Connections)
-				{
-					if (previousNode != graphCopy.GetNode(connection->GetToId()))
-					{
-						previousNode = currentNode;
-						currentNode = graphCopy.GetNode(connection->GetToId());
-					}
-				}
+				nodeStack.push(currentNode->GetId());
+				currentNode = graphCopy.GetNode(Connections[0]->GetToId());
+				graphCopy.RemoveConnection(Connections[0]);
 			}
-			else
+			else //size of connections is 0 and stacksize is also 1
 			{
-				Path.emplace_back(currentNode);
+				Path.emplace_back(m_pGraph->GetNode(currentNode->GetId()));
 				pathFound = true;
 			}
 		}
@@ -107,7 +100,6 @@ namespace GameAI
 
 	inline void EulerianPath::VisitAllNodesDFS(Node* node, std::vector<bool>& notesFound, int& nrOfNotesFound) const
 	{
-		//fix this
 		auto Connections = m_pGraph->FindConnectionsFrom(node->GetId());
 		for (auto connection : Connections)
 		{
@@ -122,7 +114,6 @@ namespace GameAI
 
 	inline bool EulerianPath::IsConnected() const
 	{
-		//TODO fix this
 		std::vector<Node*> Nodes = m_pGraph->GetActiveNodes();
 		if (Nodes.size() == 0)
 			return false;
@@ -136,9 +127,9 @@ namespace GameAI
 			if (!visited[connection->GetToId()])
 			{
 				++NrOfNotesFound;
+				visited[connection->GetToId()] = true;
 				VisitAllNodesDFS(Nodes[connection->GetToId()], visited, NrOfNotesFound);
 			}
-			visited[connection->GetToId()] = true;
 		}
 		return NrOfNotesFound == Nodes.size();
 	}
