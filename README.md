@@ -1,3 +1,8 @@
 # Game AI Project
-
-Feel free to edit the readme to your liking
+In this repo, I implement various important ai behaviors used in games. 
+It currently has:
+steering behaviors
+blended steering behaviors
+priority steering behaviors
+flocking
+spacial partitioning
