@@ -1,5 +1,7 @@
 #include "Flock.h"
 
+#include <string>
+
 #include "FieldNotificationDeclaration.h"
 #include "FlockingSteeringBehaviors.h"
 #include "Shared/ImGuiHelpers.h"
@@ -30,13 +32,15 @@ Flock::Flock(
 	if (pAgentToEvade == nullptr)
 	{
 		pAgentToEvade = pWorld->SpawnActor<ASteeringAgent>(AgentClass);
-		pAgentToEvade->SetSteeringBehavior(pWanderBehavior.get());
+		std::vector<BlendedSteering::WeightedBehavior> behaviors{{pSeekBehavior.get(), 0.5f}, {pWanderBehavior.get(), 0.5f}};
+		pEvadeAgentBlendedSteering = std::make_unique<BlendedSteering>(behaviors);
+		pAgentToEvade->SetSteeringBehavior(pEvadeAgentBlendedSteering.get());
 	}
 	std::vector<BlendedSteering::WeightedBehavior> Behaviors{{pCohesionBehavior.get(), 0.3f}};
 	Behaviors.push_back({pSeparationBehavior.get(), 0.5f});
 	Behaviors.push_back({pVelMatchBehavior.get(), 0.73f});
-	pBlendedSteering = std::make_unique<BlendedSteering>(Behaviors);
-	std::vector<ISteeringBehavior*> SteeringBehaviors{pEvadeBehavior.get(), pBlendedSteering.get()};
+	pFlockBlendedSteering = std::make_unique<BlendedSteering>(Behaviors);
+	std::vector<ISteeringBehavior*> SteeringBehaviors{pEvadeBehavior.get(), pFlockBlendedSteering.get()};
 	pPrioritySteering = std::make_unique<PrioritySteering>(SteeringBehaviors);
 	for (int i = 0; i < FlockSize; ++i)
 	{
@@ -77,6 +81,10 @@ void Flock::Tick(float DeltaTime)
 		pPartitionedSpace->UpdateAgentCell(*Agent, OldLocation);
 #endif
 	}
+	
+	//sep
+	//vel
+	
 }
 
 void Flock::RenderDebug()
@@ -121,14 +129,27 @@ void Flock::ImGuiRender(ImVec2 const& WindowPos, ImVec2 const& WindowSize)
 
 		ImGui::Text("Flocking");
 		ImGui::Spacing();
-
-  // TODO: implement ImGUI checkboxes for debug rendering here
-
+		ImGui::Spacing();
+		ImGui::Checkbox("Debug Neighborhood: ", &DebugRenderNeighborhood);
+		ImGui::Checkbox("Debug Steering: ", &DebugRenderSteering);
+		ImGui::Checkbox("Debug Partitions: ", &DebugRenderPartitions);
+		ImGui::Spacing();
+		ImGui::Spacing();
 		ImGui::Text("Behavior Weights");
 		ImGui::Spacing();
-
-  // TODO: implement ImGUI sliders for steering behavior weights here
-		//End
+		
+		ImGuiHelpers::ImGuiSliderFloatWithSetter("Seek: ",pEvadeAgentBlendedSteering->GetWeightedBehaviorsRef()[0].Weight, 0.f, 1.f
+			, [&] (float InVal) {pEvadeAgentBlendedSteering->GetWeightedBehaviorsRef()[0].Weight = InVal;});
+		ImGuiHelpers::ImGuiSliderFloatWithSetter("Wander: ",pEvadeAgentBlendedSteering->GetWeightedBehaviorsRef()[1].Weight, 0.f, 1.f
+			, [&] (float InVal) {pEvadeAgentBlendedSteering->GetWeightedBehaviorsRef()[1].Weight = InVal;});
+		ImGui::Spacing();
+		ImGuiHelpers::ImGuiSliderFloatWithSetter("Cohesion: ",pFlockBlendedSteering->GetWeightedBehaviorsRef()[0].Weight, 0.f, 1.f
+			, [&] (float InVal) {pFlockBlendedSteering->GetWeightedBehaviorsRef()[0].Weight = InVal;});
+		ImGuiHelpers::ImGuiSliderFloatWithSetter("Separation: ",pFlockBlendedSteering->GetWeightedBehaviorsRef()[1].Weight, 0.f, 1.f
+			, [&] (float InVal) {pFlockBlendedSteering->GetWeightedBehaviorsRef()[1].Weight = InVal;});
+		ImGuiHelpers::ImGuiSliderFloatWithSetter("VelocityMatch: ",pFlockBlendedSteering->GetWeightedBehaviorsRef()[2].Weight, 0.f, 1.f
+			, [&] (float InVal) {pFlockBlendedSteering->GetWeightedBehaviorsRef()[2].Weight = InVal;});
+		
 		ImGui::End();
 	}
 #pragma endregion
@@ -137,15 +158,30 @@ void Flock::ImGuiRender(ImVec2 const& WindowPos, ImVec2 const& WindowSize)
 
 void Flock::RenderNeighborhood()
 {
-	RegisterNeighbors(Agents[0]);
-	DrawDebugCircle(pWorld, FVector{Agents[0]->GetPosition(), 10.f}, 50.f, 10, FColor::Magenta
-			, false, -1, 0, 0, FVector(0, 1, 0), FVector(1, 0, 0));
-	
-	for (int i{0}; i < NrOfNeighbors; ++i)
+	if (DebugRenderNeighborhood)
 	{
-		DrawDebugCircle(pWorld, FVector{Neighbors[i]->GetPosition(), 10.f}, 50.f, 10, FColor::Emerald
-			, false, -1, 0, 0, FVector(0, 1, 0), FVector(1, 0, 0));
+		RegisterNeighbors(Agents[0]);
+		DrawDebugCircle(pWorld, FVector{Agents[0]->GetPosition(), 10.f}, 50.f, 10, FColor::Magenta
+				, false, -1, 0, 0, FVector(0, 1, 0), FVector(1, 0, 0));
+	
+		for (int i{0}; i < NrOfNeighbors; ++i)
+		{
+			DrawDebugCircle(pWorld, FVector{Neighbors[i]->GetPosition(), 10.f}, 50.f, 10, FColor::Emerald
+				, false, -1, 0, 0, FVector(0, 1, 0), FVector(1, 0, 0));
+		}
 	}
+#ifdef GAMEAI_USE_SPACE_PARTITIONING
+	if (DebugRenderPartitions)
+	{
+		pPartitionedSpace->RenderCells();	
+	}	
+#endif
+	pSeekBehavior->SetDebugRendering(DebugRenderSteering);
+	pEvadeBehavior->SetDebugRendering(DebugRenderSteering);
+	pWanderBehavior->SetDebugRendering(DebugRenderSteering);
+	pCohesionBehavior->SetDebugRendering(DebugRenderSteering);
+	pSeparationBehavior->SetDebugRendering(DebugRenderSteering);
+	pVelMatchBehavior->SetDebugRendering(DebugRenderSteering);
 }
 
 #ifndef GAMEAI_USE_SPACE_PARTITIONING
@@ -203,6 +239,7 @@ FVector2D Flock::GetAverageNeighborVelocity() const
 
 void Flock::SetTarget_Seek(FSteeringParams const& Target)
 {
- // TODO: Implement
+	
+	pSeekBehavior->SetTarget(Target);
 }
 

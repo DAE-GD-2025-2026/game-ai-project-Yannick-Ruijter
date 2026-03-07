@@ -20,9 +20,11 @@ public:
 	template<class T, std::enable_if_t<std::is_base_of_v<ISteeringBehavior, T>>* = nullptr>
 	T* As()
 	{ return static_cast<T*>(this); }
-
+	
+	void SetDebugRendering(bool value) {DebugRenderingEnabled = value;}
 protected:
 	FTargetData Target;
+	bool DebugRenderingEnabled{false};
 };
 
 // Your own SteeringBehaviors should follow here...

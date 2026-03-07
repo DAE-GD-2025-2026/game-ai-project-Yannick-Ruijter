@@ -9,7 +9,7 @@
 #include "Movement/SteeringBehaviors/CombinedSteering/CombinedSteeringBehaviors.h"
 #include <memory>
 #include "imgui.h"
-//#define GAMEAI_USE_SPACE_PARTITIONING
+#define GAMEAI_USE_SPACE_PARTITIONING
 #ifdef GAMEAI_USE_SPACE_PARTITIONING
 #include "../SpacePartitioning/SpacePartitioning.h"
 #endif
@@ -72,7 +72,8 @@ private:
 	std::unique_ptr<Wander> pWanderBehavior{};
 	std::unique_ptr<Evade> pEvadeBehavior{};
 	
-	std::unique_ptr<BlendedSteering> pBlendedSteering{};
+	std::unique_ptr<BlendedSteering> pEvadeAgentBlendedSteering{};
+	std::unique_ptr<BlendedSteering> pFlockBlendedSteering{};
 	std::unique_ptr<PrioritySteering> pPrioritySteering{};
 
 	// UI and rendering

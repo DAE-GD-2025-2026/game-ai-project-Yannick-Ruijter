@@ -76,37 +76,19 @@ void CellSpace::UpdateAgentCell(ASteeringAgent& Agent, const FVector2D& OldPos)
 void CellSpace::RegisterNeighbors(ASteeringAgent& Agent, float QueryRadius)
 {
 	NrOfNeighbors = 0;
-
-	const int centerIndex = PositionToIndex(Agent.GetPosition());
-	const int centerRow   = centerIndex / NrOfCols;
-	const int centerCol   = centerIndex % NrOfCols;
-
-	const int rowOffset = FMath::CeilToInt(QueryRadius / CellHeight);
-	const int colOffset = FMath::CeilToInt(QueryRadius / CellWidth);
-
-	const float queryRadiusSq = QueryRadius * QueryRadius;
-
-	for (int row = centerRow - rowOffset; row <= centerRow + rowOffset; ++row)
+	for (int cellIndex = 0; cellIndex < Cells.size(); ++cellIndex)
 	{
-		if (row < 0 || row >= NrOfRows) continue;
-
-		for (int col = centerCol - colOffset; col <= centerCol + colOffset; ++col)
+		if (!DoRectsOverlap(Cells[cellIndex].BoundingBox, Cells[cellIndex].BoundingBox)) continue;
+		for (ASteeringAgent* cellAgent : Cells[cellIndex].Agents)
 		{
-			if (col < 0 || col >= NrOfCols) continue;
+			if (cellAgent == &Agent) continue;
 
-			const int cellIndex = row * NrOfCols + col;
-
-			for (ASteeringAgent* cellAgent : Cells[cellIndex].Agents)
+			if (UKismetMathLibrary::Vector_Distance2DSquared(
+					Agent.GetActorLocation(),
+					cellAgent->GetActorLocation()
+				) <= QueryRadius * QueryRadius)
 			{
-				if (cellAgent == &Agent) continue;
-
-				if (UKismetMathLibrary::Vector_Distance2DSquared(
-						Agent.GetActorLocation(),
-						cellAgent->GetActorLocation()
-					) <= queryRadiusSq)
-				{
-					Neighbors[NrOfNeighbors++] = cellAgent;
-				}
+				Neighbors[NrOfNeighbors++] = cellAgent;
 			}
 		}
 	}
