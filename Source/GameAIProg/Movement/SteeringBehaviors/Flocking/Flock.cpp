@@ -1,4 +1,6 @@
 #include "Flock.h"
+
+#include "FieldNotificationDeclaration.h"
 #include "FlockingSteeringBehaviors.h"
 #include "Shared/ImGuiHelpers.h"
 
@@ -55,7 +57,6 @@ Flock::Flock(
 
 Flock::~Flock()
 {
- // TODO: Cleanup any additional data
 }
 
 void Flock::Tick(float DeltaTime)
@@ -80,7 +81,7 @@ void Flock::Tick(float DeltaTime)
 
 void Flock::RenderDebug()
 {
- // TODO: Render all the agents in the flock
+	RenderNeighborhood();
 }
 
 void Flock::ImGuiRender(ImVec2 const& WindowPos, ImVec2 const& WindowSize)
@@ -136,7 +137,15 @@ void Flock::ImGuiRender(ImVec2 const& WindowPos, ImVec2 const& WindowSize)
 
 void Flock::RenderNeighborhood()
 {
- // TODO: Debugrender the neighbors for the first agent in the flock
+	RegisterNeighbors(Agents[0]);
+	DrawDebugCircle(pWorld, FVector{Agents[0]->GetPosition(), 10.f}, 50.f, 10, FColor::Magenta
+			, false, -1, 0, 0, FVector(0, 1, 0), FVector(1, 0, 0));
+	
+	for (int i{0}; i < NrOfNeighbors; ++i)
+	{
+		DrawDebugCircle(pWorld, FVector{Neighbors[i]->GetPosition(), 10.f}, 50.f, 10, FColor::Emerald
+			, false, -1, 0, 0, FVector(0, 1, 0), FVector(1, 0, 0));
+	}
 }
 
 #ifndef GAMEAI_USE_SPACE_PARTITIONING

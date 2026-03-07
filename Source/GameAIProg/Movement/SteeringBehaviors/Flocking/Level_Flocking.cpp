@@ -16,7 +16,7 @@ void ALevel_Flocking::BeginPlay()
 {
 	Super::BeginPlay();
 
-	TrimWorld->SetTrimWorldSize(1200.f);
+	TrimWorld->SetTrimWorldSize(500.f);
 	TrimWorld->bShouldTrimWorld = false;
 
 	pFlock = TUniquePtr<Flock>(
