@@ -1,5 +1,7 @@
 #include "SpacePartitioning.h"
 
+#include <string>
+
 // --- Cell ---
 // ------------
 Cell::Cell(float Left, float Bottom, float Width, float Height)
@@ -38,11 +40,10 @@ CellSpace::CellSpace(UWorld* pWorld, float Width, float Height, int Rows, int Co
 {
 	Neighbors.SetNum(MaxEntities);
 	
-	//calculate bounds of a cell
 	CellWidth = Width / Cols;
 	CellHeight = Height / Rows;
 
-	int NumberOfCells = Rows * Rows;
+	int NumberOfCells = Rows * Cols;
 	Cells.reserve(NumberOfCells);
 	for (int i = 0; i < Rows; ++i)
 	{
@@ -70,15 +71,15 @@ void CellSpace::UpdateAgentCell(ASteeringAgent& Agent, const FVector2D& OldPos)
 	Cells[CurrentIndex].Agents.emplace_back(&Agent);
 	auto it = std::ranges::find(Cells[OldIndex].Agents, &Agent);
 	if (it != Cells[OldIndex].Agents.end()) Cells[OldIndex].Agents.erase(it);
-	
 }
 
 void CellSpace::RegisterNeighbors(ASteeringAgent& Agent, float QueryRadius)
 {
 	NrOfNeighbors = 0;
+	int agentCellIndex = PositionToIndex(Agent.GetPosition());
 	for (int cellIndex = 0; cellIndex < Cells.size(); ++cellIndex)
 	{
-		if (!DoRectsOverlap(Cells[cellIndex].BoundingBox, Cells[cellIndex].BoundingBox)) continue;
+		if (!DoRectsOverlap(Cells[cellIndex].BoundingBox, Cells[agentCellIndex].BoundingBox)) continue;
 		for (ASteeringAgent* cellAgent : Cells[cellIndex].Agents)
 		{
 			if (cellAgent == &Agent) continue;
@@ -102,11 +103,13 @@ void CellSpace::EmptyCells()
 
 void CellSpace::RenderCells() const
 {
+	FlushDebugStrings(pWorld);
 	for (auto const& Cell : Cells)
 	{
 		FVector2D BoxCenter = (Cell.BoundingBox.Min + Cell.BoundingBox.Max) * 0.5f;
 		FVector2D BoxExtent = (Cell.BoundingBox.Max - Cell.BoundingBox.Min) * 0.5f;
 		DrawDebugBox(pWorld, FVector{BoxCenter, 10.f}, FVector{BoxExtent, 0.f}, FColor::Red);
+		DrawDebugString(pWorld, FVector{BoxCenter, 10.f}, std::to_string(Cell.Agents.size()).c_str());
 	}
 }
 

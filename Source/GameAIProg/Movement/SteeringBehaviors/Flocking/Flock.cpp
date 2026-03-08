@@ -55,6 +55,7 @@ Flock::Flock(
 			Agent->SetActorTickEnabled(false);
 			Agent->SetSteeringBehavior(pPrioritySteering.get());
 			Agents.Add(Agent);
+			OldPositions.Add({Location.X, Location.Y});
 		}
 	}
 }
@@ -72,24 +73,32 @@ void Flock::Tick(float DeltaTime)
 	Target.AngularVelocity = pAgentToEvade->GetAngularVelocity();
 	
 	pEvadeBehavior->SetTarget(Target);
-	for (auto const& Agent : Agents)
+	for (int i{0}; i < Agents.Num(); ++i)
 	{
-		FVector2D OldLocation = Agent->GetPosition();
-		RegisterNeighbors(Agent);
-		Agent->Tick(DeltaTime);
+		Agents[i]->Tick(DeltaTime);
 #ifdef GAMEAI_USE_SPACE_PARTITIONING
-		pPartitionedSpace->UpdateAgentCell(*Agent, OldLocation);
+		pPartitionedSpace->UpdateAgentCell(*Agents[i], OldPositions[i]);
+		OldPositions[i] = Agents[i]->GetPosition();
 #endif
 	}
-	
-	//sep
-	//vel
-	
 }
 
 void Flock::RenderDebug()
 {
 	RenderNeighborhood();
+	
+#ifdef GAMEAI_USE_SPACE_PARTITIONING
+	if (DebugRenderPartitions)
+	{
+		pPartitionedSpace->RenderCells();	
+	}	
+#endif
+	pSeekBehavior->SetDebugRendering(DebugRenderSteering);
+	pEvadeBehavior->SetDebugRendering(DebugRenderSteering);
+	pWanderBehavior->SetDebugRendering(DebugRenderSteering);
+	pCohesionBehavior->SetDebugRendering(DebugRenderSteering);
+	pSeparationBehavior->SetDebugRendering(DebugRenderSteering);
+	pVelMatchBehavior->SetDebugRendering(DebugRenderSteering);
 }
 
 void Flock::ImGuiRender(ImVec2 const& WindowPos, ImVec2 const& WindowSize)
@@ -161,7 +170,7 @@ void Flock::RenderNeighborhood()
 	if (DebugRenderNeighborhood)
 	{
 		RegisterNeighbors(Agents[0]);
-		DrawDebugCircle(pWorld, FVector{Agents[0]->GetPosition(), 10.f}, 50.f, 10, FColor::Magenta
+		DrawDebugCircle(pWorld, FVector{Agents[0]->GetPosition(), 10.f}, NeighborhoodRadius, 10, FColor::Magenta
 				, false, -1, 0, 0, FVector(0, 1, 0), FVector(1, 0, 0));
 	
 		for (int i{0}; i < NrOfNeighbors; ++i)
@@ -170,18 +179,6 @@ void Flock::RenderNeighborhood()
 				, false, -1, 0, 0, FVector(0, 1, 0), FVector(1, 0, 0));
 		}
 	}
-#ifdef GAMEAI_USE_SPACE_PARTITIONING
-	if (DebugRenderPartitions)
-	{
-		pPartitionedSpace->RenderCells();	
-	}	
-#endif
-	pSeekBehavior->SetDebugRendering(DebugRenderSteering);
-	pEvadeBehavior->SetDebugRendering(DebugRenderSteering);
-	pWanderBehavior->SetDebugRendering(DebugRenderSteering);
-	pCohesionBehavior->SetDebugRendering(DebugRenderSteering);
-	pSeparationBehavior->SetDebugRendering(DebugRenderSteering);
-	pVelMatchBehavior->SetDebugRendering(DebugRenderSteering);
 }
 
 #ifndef GAMEAI_USE_SPACE_PARTITIONING

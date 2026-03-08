@@ -8,6 +8,7 @@
 //COHESION (FLOCKING)
 SteeringOutput Cohesion::CalculateSteering(float deltaT, ASteeringAgent& pAgent)
 {
+	pFlock->RegisterNeighbors(&pAgent);
 	FVector2D AveragePos = pFlock->GetAverageNeighborPos();
 	SetTarget(FTargetData{AveragePos});
 	pAgent.SetMaxLinearSpeed(800);
@@ -38,6 +39,7 @@ SteeringOutput Separation::CalculateSteering(float deltaT, ASteeringAgent& pAgen
 //VELOCITY MATCH (FLOCKING)
 SteeringOutput Alignment::CalculateSteering(float deltaT, ASteeringAgent& pAgent)
 {
+	pFlock->RegisterNeighbors(&pAgent);
 	FVector2D AverageVel = pFlock->GetAverageNeighborVelocity();
 	pAgent.SetMaxLinearSpeed(800);
 	SetTarget(FTargetData{pAgent.GetPosition() + AverageVel});
