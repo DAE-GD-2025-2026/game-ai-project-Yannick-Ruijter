@@ -78,19 +78,19 @@ namespace GameAI
 			auto Connections = graphCopy.FindConnectionsFrom(currentNode->GetId());
 			if (Connections.size() == 0 && nodeStack.size() > 0)
 			{
-				Path.emplace_back(m_pGraph->GetNode(currentNode->GetId()));
-				currentNode = graphCopy.GetNode(nodeStack.top());
+				Path.emplace_back(m_pGraph->GetNode(currentNode->GetId()).get());
+				currentNode = graphCopy.GetNode(nodeStack.top()).get();
 				nodeStack.pop();
 			}
 			else if (Connections.size() > 0)
 			{
 				nodeStack.push(currentNode->GetId());
-				currentNode = graphCopy.GetNode(Connections[0]->GetToId());
+				currentNode = graphCopy.GetNode(Connections[0]->GetToId()).get();
 				graphCopy.RemoveConnection(Connections[0]);
 			}
 			else //size of connections is 0 and stacksize is also 1
 			{
-				Path.emplace_back(m_pGraph->GetNode(currentNode->GetId()));
+				Path.emplace_back(m_pGraph->GetNode(currentNode->GetId()).get());
 				pathFound = true;
 			}
 		}
@@ -107,7 +107,7 @@ namespace GameAI
 			{
 				++nrOfNotesFound;
 				notesFound[connection->GetToId()] = true;
-				VisitAllNodesDFS(m_pGraph->GetNode(connection->GetToId()), notesFound, nrOfNotesFound);
+				VisitAllNodesDFS(m_pGraph->GetNode(connection->GetToId()).get(), notesFound, nrOfNotesFound);
 			}
 		}
 	}
