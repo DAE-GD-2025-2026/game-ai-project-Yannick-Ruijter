@@ -22,12 +22,17 @@ std::vector<Node*>AStar::FindPath(Node* const pStartNode, Node* const pGoalNode)
 		auto connections = pGraph->FindConnectionsFrom(currentNodeRecord.pNode->GetId());
 		for (auto connection : connections)
 		{
+			bool addToList = true;
 			float currentGCost{currentNodeRecord.costSoFar + connection->GetWeight()};
 			for (auto const& node : closedList)
 			{
 				if (node.pNode->GetId() == connection->GetToId())
 				{
-					if (currentGCost >= node.costSoFar) continue;
+					if (currentGCost >= node.costSoFar)
+					{
+						addToList = false;
+						break;
+					}
 					closedList.erase(std::ranges::find(closedList.begin(), closedList.end(), node));
 				}
 			}
@@ -35,14 +40,24 @@ std::vector<Node*>AStar::FindPath(Node* const pStartNode, Node* const pGoalNode)
 			{
 				if (node.pNode->GetId() == connection->GetToId())
 				{
-					if (currentGCost >= node.costSoFar) continue;
+					if (currentGCost >= node.costSoFar)
+					{
+						addToList = false;
+						break;
+					}
 					openList.erase(std::ranges::find(openList.begin(), openList.end(), node));
 				}
 			}
+			if (!addToList) continue;
 			openList.emplace_back(pGraph->GetNode(connection->GetToId()).get(), connection, currentGCost, GetHeuristicCost(pGraph->GetNode(connection->GetToId()).get(), pGoalNode));
 		}
 		openList.erase(std::ranges::find(openList.begin(), openList.end(), currentNodeRecord));
 		closedList.emplace_back(currentNodeRecord);
+	}
+	if (openList.empty())
+	{
+		path.emplace_back(pStartNode);
+		return path;
 	}
 	while (currentNodeRecord.pConnection)
 	{
