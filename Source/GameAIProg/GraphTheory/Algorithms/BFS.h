@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <map>
 #include <vector>
 
 namespace GameAI
@@ -12,6 +13,8 @@ namespace GameAI
 		BFS(Graph* const pGraph);
 
 		std::vector<Node*> FindPath(Node* const pStartNode, Node* const pDestinationNode) const;
+		
+		std::vector<Node*> ReconstructPath(std::map<Node*, Node*> parentMap, Node* const pStartNode, Node* const pDestinationNode) const;
 
 	private:
 		Graph* pGraph;
