@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "NavGraphNode.h"
 #include "Movement/Pathfinding/Navmesh/TriPolygon.h"
 #include "Shared/Graph/Graph.h"
 
@@ -14,6 +15,7 @@ namespace GameAI
 		
 		TriPolygon const * GetNavPolygon() const {return pNavPoly.get();}
 		int GetNodeIdFromEdgeIndex(int EdgeIdx) const;
+		std::vector<TriPolygon::Triangle> GetTrianglesFromEdgeIndex(int EdgeIdx) const;
 		
 	private:
 		std::unique_ptr<TriPolygon> pNavPoly;
