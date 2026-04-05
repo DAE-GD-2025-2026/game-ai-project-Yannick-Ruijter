@@ -7,6 +7,7 @@
 #include "AI/NavigationSystemBase.h"
 #include "GraphTheory/Algorithms/AStar.h"
 #include "GraphTheory/Algorithms/NavGraphPathfinding.h"
+#include "GraphTheory/Algorithms/PathSmoothing.h"
 #include "NavMesh/RecastNavMesh.h"
 #include "Runtime/Navmesh/Public/Detour/DetourNavMesh.h"
 #include "Shared/GameAISpectator.h"
@@ -66,7 +67,6 @@ void ALevel_Navmesh::BeginPlay()
 void ALevel_Navmesh::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
 	if (bDrawNavPoly)
 	{
 		NavigationGraph->GetNavPolygon()->DrawDebug(GetWorld(), FColor::Yellow);
@@ -97,11 +97,19 @@ void ALevel_Navmesh::Tick(float DeltaTime)
 		}
 	}
 	
-	// Todo: Draw the portals travelled through with SSFA
-	// if (bDrawPortals)
-	// {
-	// 	
-	// }
+	if (bDrawPortals)
+	{
+		for (auto const& portal: GameAI::NavMeshPathfinding::LastPortals)
+		{
+			DrawDebugLine(GetWorld(),FVector{portal.P1, 5.0f}, 
+				FVector{portal.P2, 5.0f}, 
+				FColor::Orange, false, -1, 1, 10);
+			DrawDebugCircle(GetWorld(), FVector{portal.P1, 5.1f}, 10.f, 6,FColor::Emerald, false, -1
+				, 1, 2.f, FVector{1, 0, 0}, FVector{0, 1, 0});
+			DrawDebugCircle(GetWorld(), FVector{portal.P2, 5.1f}, 10.f, 6,FColor::Yellow, false, -1
+				, 1, 2.f, FVector{1, 0, 0}, FVector{0, 1, 0});
+		}
+	}
 	
 	UpdateImGui();
 }

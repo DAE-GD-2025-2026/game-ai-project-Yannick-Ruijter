@@ -8,6 +8,8 @@
 
 using namespace GameAI;
 
+std::vector<NavLine> NavMeshPathfinding::LastPortals = {};
+
 std::vector<FVector2D> NavMeshPathfinding::FindPath(const FVector2D& startPos, const FVector2D& endPos,
 	NavGraph* const pNavGraph, std::vector<FVector2D>& debugNodePositions, std::vector<NavLine>& debugPortals) 
 {
@@ -61,8 +63,8 @@ std::vector<FVector2D> NavMeshPathfinding::FindPath(const FVector2D& startPos, c
 	//Debug Visualisation
 
 	// Extra: Run optimiser on new graph (First check if everything works without SSFA!)
-	debugPortals = SSFA::FindPortals(nodePath, *pNavGraph->GetNavPolygon());
-	finalPath = SSFA::OptimizePortals(debugPortals, *pNavGraph->GetNavPolygon());
+	LastPortals = SSFA::FindPortals(nodePath, *pNavGraph->GetNavPolygon());
+	finalPath = SSFA::OptimizePortals(LastPortals, *pNavGraph->GetNavPolygon());
 	
 	return finalPath;
 }
