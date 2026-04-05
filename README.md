@@ -6,3 +6,6 @@ It currently has:
 -priority steering behaviors
 -flocking
 -spacial partitioning
+-A* pathfinding
+-navmesh navigation
+-SSFA
