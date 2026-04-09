@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Algorithms/GraphColoring.h"
 #include "Movement/SteeringBehaviors/PathFollow/PathFollowSteeringBehavior.h"
 #include "Shared/Level_Base.h"
 #include "Shared/Graph/Graph.h"
@@ -37,6 +38,7 @@ private:
 	GameAI::Graph Graph{false};
 	GameAI::GraphRenderer Renderer{nullptr};
 	GameAI::GraphNodeFactory<GameAI::Node> NodeFactory{};
+	GameAI::GraphColoring GraphColoring{nullptr, nullptr};
 	
 	UPROPERTY()
 	UGraphEditorComponent* PlayerGraphEditor{}; // ref

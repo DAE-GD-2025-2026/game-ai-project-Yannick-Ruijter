@@ -18,6 +18,7 @@ ALevel_GraphTheory::ALevel_GraphTheory()
 // Called when the game starts or when spawned
 void ALevel_GraphTheory::BeginPlay()
 {
+	GetWorld();
 	Super::BeginPlay();
 	
 	// Add the graph editor to our player
@@ -42,7 +43,6 @@ void ALevel_GraphTheory::BeginPlay()
 		Player->SetCameraProjection(ECameraProjectionMode::Orthographic);
 	}
 	
-	// TODO Make the graph and a couple connected nodes here...
 	Renderer = GraphRenderer{GetWorld()};
 	auto index1 = Graph.AddNode(NodeFactory.CreateNode(FVector2D{0.0f, 0.0f}));
 	auto index2 = Graph.AddNode(NodeFactory.CreateNode(FVector2D{100.f, 100.f}));
@@ -51,6 +51,9 @@ void ALevel_GraphTheory::BeginPlay()
 	Agent = GetWorld()->SpawnActor<ASteeringAgent>(SteeringAgentClass, 
 	FVector{0,0,90}, FRotator::ZeroRotator);
 	Agent->SetSteeringBehavior(&PathFollow);
+	
+	//add graph coloring
+	GraphColoring = GameAI::GraphColoring{&Graph, GetWorld()};
 }
 
 void ALevel_GraphTheory::BeginDestroy()
@@ -102,6 +105,7 @@ void ALevel_GraphTheory::Tick(float DeltaTime)
 #pragma endregion UI
 	
 	Renderer.RenderGraph(Graph);
+	GraphColoring.DrawColors();
 	Agent->Tick(DeltaTime);
 	// TODO Check if the graph has updated
 	if (!PlayerGraphEditor->HasGraphUpdated()) return;
@@ -110,6 +114,7 @@ void ALevel_GraphTheory::Tick(float DeltaTime)
 	Eulerianity eulerianity{eulerianPath.IsEulerian()};
 	auto nodePath = eulerianPath.FindPath(eulerianity);
 	UpdateAgentPath(nodePath);
+	GraphColoring.RecalculateColors();
 }
 
 void ALevel_GraphTheory::UpdateAgentPath(std::vector<Node*> const& Trail)

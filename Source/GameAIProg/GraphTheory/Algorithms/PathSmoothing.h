@@ -128,35 +128,3 @@ private:
 	~SSFA() {};
 };
 }
-
-
-/*
-*apex = portals[0].left; // start
-left = portals[0].left;
-right = portals[0].right;
-
-for (i = 1; i < portals.size(); ++i)
-{
-newLeft = portals[i].left;
-newRight = portals[i].right;
-
-// update right
-if (cross(right - apex, newRight - apex) <= 0)
-{
-if (apex == right || cross(left - apex, newRight - apex) > 0)
-{
-	right = newRight;
-}
-else
-{
-	// collapse → add left
-	path.push_back(left);
-	apex = left;
-	reset funnel
-	restart loop
-}
-}
-
-// update left (mirror logic)
-}
- */
