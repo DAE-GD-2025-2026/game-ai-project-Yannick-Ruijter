@@ -38,5 +38,7 @@ private:
 	std::unique_ptr<Seek> ThiefSeek{nullptr};
 	
 	void SetupPerception(AGameAIController* AIController);
+	UFUNCTION()
+	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
 	void SetupAgents(AGameAIController* AIController);
 };

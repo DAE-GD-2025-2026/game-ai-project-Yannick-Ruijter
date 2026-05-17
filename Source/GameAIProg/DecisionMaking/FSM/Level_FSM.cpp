@@ -29,23 +29,29 @@ ALevel_FSM::ALevel_FSM()
 void ALevel_FSM::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	// 1. Spawn ThiefAgent and give it a stimuli source
 	ThiefAgent = GetWorld()->SpawnActor<ASteeringAgent>(SteeringAgentClass,
-	FVector{700,0,90}, FRotator::ZeroRotator);
+		FVector{700,0,90}, FRotator::ZeroRotator);
 	ThiefAgent->SetDebugRenderingEnabled(true);
 	ThiefSeek = std::make_unique<Seek>();
 	ThiefAgent->SetSteeringBehavior(ThiefSeek.get());
 	ThiefSeek->SetTarget(MouseTarget);
-	//give it a stimulisourcecomponent so it can be sensed
-	UAIPerceptionStimuliSourceComponent* StimuliSource = NewObject<UAIPerceptionStimuliSourceComponent>(ThiefAgent, "StimuliSource");
-	StimuliSource->RegisterForSense(TSubclassOf<UAISense>(UAISense_Sight::StaticClass()));
-	StimuliSource->RegisterWithPerceptionSystem();
-	StimuliSource->RegisterComponent();
-	
-	Agent = GetWorld()->SpawnActor<ASteeringAgent>(SteeringAgentClass, 
-	FVector{0,0,90}, FRotator::ZeroRotator);
+
+	UAIPerceptionStimuliSourceComponent* StimuliSource = Cast<UAIPerceptionStimuliSourceComponent>(
+	ThiefAgent->AddComponentByClass(UAIPerceptionStimuliSourceComponent::StaticClass(), false, FTransform::Identity, false));
+	if (StimuliSource)
+	{
+		StimuliSource->RegisterForSense(UAISense_Sight::StaticClass());
+		StimuliSource->RegisterWithPerceptionSystem();
+	}
+
+	// 2. Spawn Agent FIRST so its controller exists
+	Agent = GetWorld()->SpawnActor<ASteeringAgent>(SteeringAgentClass,
+		FVector{0,0,90}, FRotator::ZeroRotator);
 	Agent->SetDebugRenderingEnabled(false);
-	
+
+	// 3. NOW get the controller, it's valid
 	if (AGameAIController* AIController = Cast<AGameAIController>(Agent->GetController()))
 	{
 		SetupPerception(AIController);
@@ -53,12 +59,12 @@ void ALevel_FSM::BeginPlay()
 	}
 	
 }
+
 void ALevel_FSM::SetupPerception(AGameAIController* AIController)
 {
 	UAIPerceptionComponent* Perception = NewObject<UAIPerceptionComponent>(AIController, "Perception");
-	AIController->SetPerceptionComponent(*Perception);
 	Perception->RegisterComponent();
-	UAIPerceptionSystem::RegisterPerceptionStimuliSource(AIController, UAISense_Sight::StaticClass(), ThiefAgent);
+	AIController->SetPerceptionComponent(*Perception);
 	
 	UAISenseConfig_Sight* SightConfig = NewObject<UAISenseConfig_Sight>(Perception, "SightConfig");
 	SightConfig->SightRadius = 500.f;
@@ -71,15 +77,16 @@ void ALevel_FSM::SetupPerception(AGameAIController* AIController)
 
 	Perception->ConfigureSense(*SightConfig);
 	Perception->SetDominantSense(SightConfig->GetSenseImplementation());
+	Perception->RequestStimuliListenerUpdate();
 	
-	Perception->OnTargetPerceptionUpdated.AddDynamic(AIController, &AGameAIController::OnTargetPerceptionUpdated);
+	Perception->OnTargetPerceptionUpdated.AddDynamic(this, &ALevel_FSM::OnTargetPerceptionUpdated);
 }
 
-void AGameAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
+void ALevel_FSM::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
 	if (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>())
 	{
-		GetBlackboardComponent()->SetValueAsBool("ThiefSpotted", Stimulus.WasSuccessfullySensed());
+		Cast<AGameAIController>(Agent->GetController())->GetBlackboardComponent()->SetValueAsBool("ThiefSpotted", Stimulus.WasSuccessfullySensed());
 	}
 }
 
@@ -126,7 +133,7 @@ void ALevel_FSM::SetupAgents(AGameAIController* AIController)
 		Agent->SetSteeringBehavior(FSMPathFollow.get());
 		
 		auto patrolState = std::make_unique<GameAI::FSM::State>("Patrol", 
-			[&]()
+			[AIController]()
 			{
 				auto agent = static_cast<ASteeringAgent*>(AIController->GetBlackboardComponent()->GetValueAsObject("Agent"));
 				auto steeringBehavior = AIController->GetBlackboardComponent()->GetValue<UBlackBoardKeyType_PathFollow>("PathFollow");
@@ -136,7 +143,7 @@ void ALevel_FSM::SetupAgents(AGameAIController* AIController)
 		FSM->AddState(std::move(patrolState));     
 		
 		auto searchState = std::make_unique<GameAI::FSM::State>("Search", 
-			[&]()
+			[AIController]()
 			{
 				auto agent = static_cast<ASteeringAgent*>(AIController->GetBlackboardComponent()->GetValueAsObject("Agent"));
 				auto steeringBehavior = AIController->GetBlackboardComponent()->GetValue<UBlackBoardKeyType_Wander>("Wander");
@@ -146,12 +153,21 @@ void ALevel_FSM::SetupAgents(AGameAIController* AIController)
 		FSM->AddState(std::move(searchState));
 
 		auto chaseState = std::make_unique<GameAI::FSM::State>("Chase", 
-			[&]()
+			[AIController]()
 			{
 				auto agent = static_cast<ASteeringAgent*>(AIController->GetBlackboardComponent()->GetValueAsObject("Agent"));
 				auto steeringBehavior = AIController->GetBlackboardComponent()->GetValue<UBlackBoardKeyType_Seek>("Seek");
+				auto thief = static_cast<ASteeringAgent*>(AIController->GetBlackboardComponent()->GetValueAsObject("ThiefAgent"));
+				FTargetData targetData{thief->GetPosition()};
+				steeringBehavior->SetTarget(targetData);
 				agent->SetSteeringBehavior(steeringBehavior);
-			}, [&](float){});
+			}, [AIController](float)
+			{
+				auto steeringBehavior = AIController->GetBlackboardComponent()->GetValue<UBlackBoardKeyType_Seek>("Seek");
+				auto thief = static_cast<ASteeringAgent*>(AIController->GetBlackboardComponent()->GetValueAsObject("ThiefAgent"));
+				FTargetData targetData{thief->GetPosition()};
+				steeringBehavior->SetTarget(targetData);
+			});
 		auto chaseStatePtr = chaseState.get();
 		FSM->AddState(std::move(chaseState)); 
 		
@@ -184,6 +200,7 @@ void ALevel_FSM::SetupAgents(AGameAIController* AIController)
 		});
 		
 		AIController->RunFiniteStateMachine();
+		FSM->StartLogic();
 	}
 }
 

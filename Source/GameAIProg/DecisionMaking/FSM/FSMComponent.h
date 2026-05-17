@@ -9,6 +9,7 @@
 #include "CoreMinimal.h"
 #include "BrainComponent.h"
 #include "Curves/BezierUtilities.h"
+#include "DecisionMaking/GameAIController.h"
 #include "FSMComponent.generated.h"
 
 namespace GameAI::FSM
@@ -19,7 +20,7 @@ namespace GameAI::FSM
 		State(std::string const& name, std::function<void()>const & onEnter, std::function<void(float)>const & tick) 
 		: m_StateName{name}, m_OnEnter{onEnter}, m_Tick{tick} {}
 		void Tick(float DeltaTime){m_Tick(DeltaTime);};
-	private:
+	
 		std::string m_StateName;
 		std::function<void()> m_OnEnter;
 		std::function<void(float)> m_Tick;
@@ -54,17 +55,7 @@ namespace GameAI::FSM
 			if (m_CurrentStateIndex < 0) return nullptr;
 			return m_States[m_CurrentStateIndex].get();
 		};
-		void SetCurrentState(State const* state)
-		{
-			for (int i = 0; i < m_States.size(); ++i)
-			{
-				if (m_States[i].get() == state)
-				{
-					m_CurrentStateIndex = i;
-					return;
-				}
-			}
-		};
+		void SetCurrentState(State const* state);
 	private:
 		std::vector<std::unique_ptr<State>> m_States{};
 		std::vector<std::unique_ptr<Transition>> m_Transitions{};
@@ -79,7 +70,7 @@ class GAMEAIPROG_API UFSMComponent : public UBrainComponent
 
 public:
 	// Sets default values for this component's properties
-	UFSMComponent();
+	UFSMComponent(AGameAIController* AIController);
 
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
