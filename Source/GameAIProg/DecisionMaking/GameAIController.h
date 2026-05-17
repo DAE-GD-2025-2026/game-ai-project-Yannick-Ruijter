@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
+#include "Perception/AIPerceptionTypes.h"
 #include "GameAIController.generated.h"
 
 UCLASS()
@@ -21,7 +22,9 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	
 	void RunFiniteStateMachine();
-	
+	UFUNCTION(BlueprintCallable, Category="AI|FSM")
+	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

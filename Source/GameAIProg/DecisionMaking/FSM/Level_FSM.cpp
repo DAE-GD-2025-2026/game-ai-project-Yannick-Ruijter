@@ -9,10 +9,12 @@
 #include "UBlackBoardKeyType_Wander.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BehaviorTree/BlackboardData.h"
+#include "BehaviorTree/Blackboard/BlackboardKeyType_Bool.h"
 #include "BehaviorTree/Blackboard/BlackboardKeyType_Float.h"
 #include "BehaviorTree/Blackboard/BlackboardKeyType_Object.h"
 #include "DecisionMaking/GameAIController.h"
 #include "Perception/AIPerceptionComponent.h"
+#include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 
 
@@ -34,6 +36,11 @@ void ALevel_FSM::BeginPlay()
 	ThiefSeek = std::make_unique<Seek>();
 	ThiefAgent->SetSteeringBehavior(ThiefSeek.get());
 	ThiefSeek->SetTarget(MouseTarget);
+	//give it a stimulisourcecomponent so it can be sensed
+	UAIPerceptionStimuliSourceComponent* StimuliSource = NewObject<UAIPerceptionStimuliSourceComponent>(ThiefAgent, "StimuliSource");
+	StimuliSource->RegisterForSense(TSubclassOf<UAISense>(UAISense_Sight::StaticClass()));
+	StimuliSource->RegisterWithPerceptionSystem();
+	StimuliSource->RegisterComponent();
 	
 	Agent = GetWorld()->SpawnActor<ASteeringAgent>(SteeringAgentClass, 
 	FVector{0,0,90}, FRotator::ZeroRotator);
@@ -46,31 +53,33 @@ void ALevel_FSM::BeginPlay()
 	}
 	
 }
-
-void ALevel_FSM::AddFloatToBlackBoard(AGameAIController* AIController, FName const& name, float value)
-{
-	FBlackboardEntry Entry;
-	Entry.EntryName = name;
-	Entry.KeyType = NewObject<UBlackboardKeyType_Float>();
-	AIController->FSMBlackboardAsset->Keys.Add(Entry);
-	AIController->GetBlackboardComponent()->SetValueAsFloat(name, value);
-}
-
 void ALevel_FSM::SetupPerception(AGameAIController* AIController)
 {
-	if (auto perception = AIController->GetPerceptionComponent(); perception != nullptr)
-	{
-		UAISenseConfig_Sight* SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>("SightConfig");
-		SightConfig->SightRadius = 500.f;
-		SightConfig->LoseSightRadius = 600.f;
-		SightConfig->PeripheralVisionAngleDegrees = 60.f;
-		SightConfig->SetMaxAge(5.f);
-		SightConfig->DetectionByAffiliation.bDetectEnemies = true;
-		SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
-		SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
+	UAIPerceptionComponent* Perception = NewObject<UAIPerceptionComponent>(AIController, "Perception");
+	AIController->SetPerceptionComponent(*Perception);
+	Perception->RegisterComponent();
+	UAIPerceptionSystem::RegisterPerceptionStimuliSource(AIController, UAISense_Sight::StaticClass(), ThiefAgent);
+	
+	UAISenseConfig_Sight* SightConfig = NewObject<UAISenseConfig_Sight>(Perception, "SightConfig");
+	SightConfig->SightRadius = 500.f;
+	SightConfig->LoseSightRadius = 600.f;
+	SightConfig->PeripheralVisionAngleDegrees = 60.f;
+	SightConfig->SetMaxAge(5.f);
+	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
+	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
+	SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
 
-		perception->ConfigureSense(*SightConfig);
-		perception->SetDominantSense(SightConfig->GetSenseImplementation());
+	Perception->ConfigureSense(*SightConfig);
+	Perception->SetDominantSense(SightConfig->GetSenseImplementation());
+	
+	Perception->OnTargetPerceptionUpdated.AddDynamic(AIController, &AGameAIController::OnTargetPerceptionUpdated);
+}
+
+void AGameAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
+{
+	if (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>())
+	{
+		GetBlackboardComponent()->SetValueAsBool("ThiefSpotted", Stimulus.WasSuccessfullySensed());
 	}
 }
 
@@ -99,11 +108,12 @@ void ALevel_FSM::SetupAgents(AGameAIController* AIController)
 			AIController->FSMBlackboardAsset->Keys.Add(Entry);
 		};
 
-		RegisterKey("ThiefAgent",NewObject<UBlackboardKeyType_Object>());
-		RegisterKey("Agent",NewObject<UBlackboardKeyType_Object>());
-		RegisterKey("Seek",NewObject<UBlackBoardKeyType_Seek>());
-		RegisterKey("Wander",NewObject<UBlackBoardKeyType_Wander>());
-		RegisterKey("PathFollow",NewObject<UBlackBoardKeyType_PathFollow>());
+		RegisterKey("ThiefAgent", NewObject<UBlackboardKeyType_Object>());
+		RegisterKey("Agent", NewObject<UBlackboardKeyType_Object>());
+		RegisterKey("Seek", NewObject<UBlackBoardKeyType_Seek>());
+		RegisterKey("Wander", NewObject<UBlackBoardKeyType_Wander>());
+		RegisterKey("PathFollow", NewObject<UBlackBoardKeyType_PathFollow>());
+		RegisterKey("ThiefSpotted", NewObject<UBlackboardKeyType_Bool>());
 
 		AIController->GetBlackboardComponent()->InitializeBlackboard(*AIController->FSMBlackboardAsset);
 
@@ -112,6 +122,7 @@ void ALevel_FSM::SetupAgents(AGameAIController* AIController)
 		AIController->GetBlackboardComponent()->SetValue<UBlackBoardKeyType_Seek>("Seek", FSMSeek.get());
 		AIController->GetBlackboardComponent()->SetValue<UBlackBoardKeyType_Wander>("Wander", FSMWander.get());
 		AIController->GetBlackboardComponent()->SetValue<UBlackBoardKeyType_PathFollow>("PathFollow", FSMPathFollow.get());
+		AIController->GetBlackboardComponent()->SetValueAsBool("ThiefSpotted", false);
 		Agent->SetSteeringBehavior(FSMPathFollow.get());
 		
 		auto patrolState = std::make_unique<GameAI::FSM::State>("Patrol", 
@@ -146,73 +157,15 @@ void ALevel_FSM::SetupAgents(AGameAIController* AIController)
 		
 		FSM->AddTransition(patrolStatePtr, chaseStatePtr, [AIController]()
 		{
-			auto thief = static_cast<ASteeringAgent*>(
-			   AIController->GetBlackboardComponent()->GetValueAsObject("ThiefAgent"));
-
-			if (!thief) return false;
-
-		   UAIPerceptionComponent* Perception = AIController->GetPerceptionComponent();
-		   if (!Perception) return false;
-
-		   FActorPerceptionBlueprintInfo Info;
-		   Perception->GetActorsPerception(thief, Info);
-
-		   for (const FAIStimulus& Stimulus : Info.LastSensedStimuli)
-		   {
-			   if (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>() 
-				   && Stimulus.WasSuccessfullySensed())
-			   {
-				   return true;
-			   }
-		   }
-		   return false;
+			return AIController->GetBlackboardComponent()->GetValueAsBool("ThiefSpotted");
 		});
 		FSM->AddTransition(chaseStatePtr, searchStatePtr, [AIController]()
 		{
-			
-			auto thief = static_cast<ASteeringAgent*>(
-			   AIController->GetBlackboardComponent()->GetValueAsObject("ThiefAgent"));
-
-			if (!thief) return false;
-
-		   UAIPerceptionComponent* Perception = AIController->GetPerceptionComponent();
-		   if (!Perception) return false;
-
-		   FActorPerceptionBlueprintInfo Info;
-		   Perception->GetActorsPerception(thief, Info);
-
-		   for (const FAIStimulus& Stimulus : Info.LastSensedStimuli)
-		   {
-			   if (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>() 
-				   && !Stimulus.WasSuccessfullySensed())
-			   {
-				   return true;
-			   }
-		   }
-		   return false;
+			return !AIController->GetBlackboardComponent()->GetValueAsBool("ThiefSpotted");
 		});
 		FSM->AddTransition(searchStatePtr, chaseStatePtr, [AIController]()
 		{
-			auto thief = static_cast<ASteeringAgent*>(
-			   AIController->GetBlackboardComponent()->GetValueAsObject("ThiefAgent"));
-
-			if (!thief) return false;
-
-		   UAIPerceptionComponent* Perception = AIController->GetPerceptionComponent();
-		   if (!Perception) return false;
-
-		   FActorPerceptionBlueprintInfo Info;
-		   Perception->GetActorsPerception(thief, Info);
-
-		   for (const FAIStimulus& Stimulus : Info.LastSensedStimuli)
-		   {
-			   if (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>() 
-				   && Stimulus.WasSuccessfullySensed())
-			   {
-				   return true;
-			   }
-		   }
-		   return false;
+			return AIController->GetBlackboardComponent()->GetValueAsBool("ThiefSpotted");
 		});
 		FSM->AddTransition(searchStatePtr, patrolStatePtr, [AIController]()
 		{
@@ -232,16 +185,6 @@ void ALevel_FSM::SetupAgents(AGameAIController* AIController)
 		
 		AIController->RunFiniteStateMachine();
 	}
-}
-
-template <typename DataType, typename RawData>
-void ALevel_FSM::AddToBlackBoard(AGameAIController* AIController, FName const& name, RawData* object)
-{
-	FBlackboardEntry Entry;
-	Entry.EntryName = name;
-	Entry.KeyType = NewObject<DataType>();
-	AIController->FSMBlackboardAsset->Keys.Add(Entry);
-	AIController->GetBlackboardComponent()->SetValue<DataType>(name, object); 
 }
 
 // Called every frame

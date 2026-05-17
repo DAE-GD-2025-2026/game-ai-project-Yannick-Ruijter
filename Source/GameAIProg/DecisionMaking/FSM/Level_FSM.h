@@ -37,10 +37,6 @@ private:
 	std::unique_ptr<Seek> FSMSeek{nullptr};
 	std::unique_ptr<Seek> ThiefSeek{nullptr};
 	
-	template <typename DataType, typename RawData>
-	static void AddToBlackBoard(AGameAIController* AIController, FName const& name, RawData* object);
-	static void AddFloatToBlackBoard(AGameAIController* AIController, FName const& name, float value);
-	
 	void SetupPerception(AGameAIController* AIController);
 	void SetupAgents(AGameAIController* AIController);
 };
