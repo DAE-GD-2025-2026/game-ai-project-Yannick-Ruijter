@@ -7,7 +7,7 @@
 class PathFollow : public ISteeringBehavior
 {
 public:
-	PathFollow();
+	PathFollow(bool isLooping = false);
 	virtual ~PathFollow() override;
 	void SetPath(std::vector<FVector2D>& path);
 	virtual SteeringOutput CalculateSteering(float DeltaTime, ASteeringAgent & Agent) override;
@@ -18,6 +18,7 @@ private:
 	ISteeringBehavior* pCurrentSteering = nullptr;
 	std::vector<FVector2D> pathVec = {};
 	int currentPathIndex = 0;
+	bool isLooping = false;
 
 	void GotoNextPathPoint();
 };

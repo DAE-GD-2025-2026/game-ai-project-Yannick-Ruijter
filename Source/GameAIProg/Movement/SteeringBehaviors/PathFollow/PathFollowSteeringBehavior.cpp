@@ -1,7 +1,8 @@
 #include "PathFollowSteeringBehavior.h"
 #include "../SteeringAgent.h"
 
-PathFollow::PathFollow()
+PathFollow::PathFollow(bool isLooping)
+	:isLooping(isLooping)
 {
 	pSeek = new Seek();
 	pArrive = new Arrive();
@@ -46,9 +47,15 @@ SteeringOutput PathFollow::CalculateSteering(float DeltaTime, ASteeringAgent& Ag
 void PathFollow::GotoNextPathPoint()
 {
 	++currentPathIndex;
-	if (currentPathIndex >= static_cast<int>(pathVec.size())) return;
+	if (currentPathIndex >= static_cast<int>(pathVec.size()))
+	{
+		if (isLooping)
+			currentPathIndex = -1;
+		else
+			return;
+	}
 	
-	if (currentPathIndex == pathVec.size() -1)
+	if (currentPathIndex == pathVec.size() -1 && !isLooping)
 	{
 		FTargetData PathTarget{pathVec[currentPathIndex]};
 		//We have reached the last node

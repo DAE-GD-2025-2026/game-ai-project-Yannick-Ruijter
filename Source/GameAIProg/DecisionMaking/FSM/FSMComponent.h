@@ -4,16 +4,72 @@
 
 #include <functional>
 #include <memory>
+#include <string>
 
 #include "CoreMinimal.h"
 #include "BrainComponent.h"
+#include "Curves/BezierUtilities.h"
 #include "FSMComponent.generated.h"
 
 namespace GameAI::FSM
 {
-	class State;
-	class Transition;
-	class FSM; // contains FSM logic
+	class State
+	{
+	public:
+		State(std::string const& name, std::function<void()>const & onEnter, std::function<void(float)>const & tick) 
+		: m_StateName{name}, m_OnEnter{onEnter}, m_Tick{tick} {}
+		void Tick(float DeltaTime){m_Tick(DeltaTime);};
+	private:
+		std::string m_StateName;
+		std::function<void()> m_OnEnter;
+		std::function<void(float)> m_Tick;
+	};
+	class Transition
+	{
+	public:
+		Transition(State* From, State* To, std::function<bool()>const& EvalFunc)
+			: m_FromState{From}, m_ToState{To}, m_EvalFunc{EvalFunc}
+		{}
+		
+		State* m_FromState;
+		State* m_ToState;
+		std::function<bool()> m_EvalFunc;
+	};
+	class FSM
+	{
+	public:
+		FSM() = default;
+		void AddState(std::unique_ptr<State>&& NewState)
+		{
+			m_States.emplace_back(std::move(NewState));
+			if (m_CurrentStateIndex == -1) m_CurrentStateIndex = 0;
+		};
+		void AddTransition(State* FromState,State* ToState, std::function<bool()>const& EvalFunc)
+		{
+			m_Transitions.emplace_back(std::make_unique<Transition>(FromState, ToState, EvalFunc));
+		};
+		std::vector<std::unique_ptr<Transition>> const& GetTransitions() const{return m_Transitions;};
+		State* GetCurrentState() const
+		{
+			if (m_CurrentStateIndex < 0) return nullptr;
+			return m_States[m_CurrentStateIndex].get();
+		};
+		void SetCurrentState(State const* state)
+		{
+			for (int i = 0; i < m_States.size(); ++i)
+			{
+				if (m_States[i].get() == state)
+				{
+					m_CurrentStateIndex = i;
+					return;
+				}
+			}
+		};
+	private:
+		std::vector<std::unique_ptr<State>> m_States{};
+		std::vector<std::unique_ptr<Transition>> m_Transitions{};
+		int m_CurrentStateIndex{-1};
+	}; // contains FSM logic
 }
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -35,13 +91,14 @@ public:
 	virtual bool IsRunning() const override; 
 	
 	void AddState(std::unique_ptr<GameAI::FSM::State>&& NewState);
-	void AddTransition(GameAI::FSM::State* From, GameAI::FSM::State* To, std::function<bool()> EvalFunc) const;
+	void AddTransition(GameAI::FSM::State* From, GameAI::FSM::State* To, std::function<bool()> EvalFunc);
 		
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
 private:
-	//std::unique_ptr<GameAI::FSM::FSM> FSMInstance;
+	std::unique_ptr<GameAI::FSM::FSM> FSMInstance{std::make_unique<GameAI::FSM::FSM>()};
 	bool bIsRunning{false};
+	FString LastStopReason{};
 };

@@ -2,7 +2,11 @@
 
 #pragma once
 
+#include <memory>
+
 #include "CoreMinimal.h"
+#include "DecisionMaking/GameAIController.h"
+#include "Movement/SteeringBehaviors/PathFollow/PathFollowSteeringBehavior.h"
 #include "Shared/Level_Base.h"
 #include "Level_FSM.generated.h"
 
@@ -24,5 +28,19 @@ protected:
 
 private:
 	UPROPERTY()
-	ASteeringAgent* Agent{nullptr}; // ref
+	ASteeringAgent* Agent{nullptr};
+	UPROPERTY()
+	ASteeringAgent* ThiefAgent{nullptr};
+	
+	std::unique_ptr<PathFollow> FSMPathFollow{nullptr};
+	std::unique_ptr<Wander> FSMWander{nullptr};
+	std::unique_ptr<Seek> FSMSeek{nullptr};
+	std::unique_ptr<Seek> ThiefSeek{nullptr};
+	
+	template <typename DataType, typename RawData>
+	static void AddToBlackBoard(AGameAIController* AIController, FName const& name, RawData* object);
+	static void AddFloatToBlackBoard(AGameAIController* AIController, FName const& name, float value);
+	
+	void SetupPerception(AGameAIController* AIController);
+	void SetupAgents(AGameAIController* AIController);
 };
