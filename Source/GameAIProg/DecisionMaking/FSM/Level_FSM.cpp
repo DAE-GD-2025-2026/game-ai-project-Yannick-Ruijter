@@ -117,7 +117,7 @@ void ALevel_FSM::SetupAgents(AGameAIController* AIController)
 		Agent->SetSteeringBehavior(FSMPathFollow.get());
 		
 		auto patrolState = std::make_unique<GameAI::FSM::State>("Patrol", 
-			[AIController = Cast<AGameAIController>(Agent->GetController())]()
+			[AIController]()
 			{
 				auto agent = static_cast<ASteeringAgent*>(AIController->GetBlackboardComponent()->GetValueAsObject("Agent"));
 				auto steeringBehavior = AIController->GetBlackboardComponent()->GetValue<UBlackBoardKeyType_PathFollow>("PathFollow");
@@ -127,7 +127,7 @@ void ALevel_FSM::SetupAgents(AGameAIController* AIController)
 		FSM->AddState(std::move(patrolState));     
 		
 		auto searchState = std::make_unique<GameAI::FSM::State>("Search", 
-			[AIController = Cast<AGameAIController>(Agent->GetController())]()
+			[AIController]()
 			{
 				auto agent = static_cast<ASteeringAgent*>(AIController->GetBlackboardComponent()->GetValueAsObject("Agent"));
 				auto steeringBehavior = AIController->GetBlackboardComponent()->GetValue<UBlackBoardKeyType_Wander>("Wander");
@@ -137,7 +137,7 @@ void ALevel_FSM::SetupAgents(AGameAIController* AIController)
 		FSM->AddState(std::move(searchState));
 
 		auto chaseState = std::make_unique<GameAI::FSM::State>("Chase", 
-			[AIController = Cast<AGameAIController>(Agent->GetController())]()
+			[AIController]()
 			{
 				auto agent = static_cast<ASteeringAgent*>(AIController->GetBlackboardComponent()->GetValueAsObject("Agent"));
 				auto steeringBehavior = AIController->GetBlackboardComponent()->GetValue<UBlackBoardKeyType_Seek>("Seek");
@@ -189,7 +189,7 @@ bool ALevel_FSM::TransitionToPatrol()
 	FActorPerceptionBlueprintInfo Info;
 	Perception->GetActorsPerception(thief, Info);
 
-	return Info.LastSensedStimuli.IsEmpty();
+	return Info.LastSensedStimuli.IsEmpty() || Info.LastSensedStimuli[0].IsExpired();
 }
 
 void ALevel_FSM::InitBlackboard(AGameAIController* AIController)

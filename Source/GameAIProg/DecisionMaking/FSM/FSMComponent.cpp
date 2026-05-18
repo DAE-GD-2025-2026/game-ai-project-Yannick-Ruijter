@@ -55,9 +55,11 @@ void UFSMComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorCo
 	{
 		if (transition->m_FromState == currentState)
 		{
-			if (transition->m_EvalFunc()) 
+			if (transition->m_EvalFunc())
+			{
 				FSMInstance->SetCurrentState(transition->m_ToState);
-			break;
+				break;
+			}
 		}
 	}
 }
