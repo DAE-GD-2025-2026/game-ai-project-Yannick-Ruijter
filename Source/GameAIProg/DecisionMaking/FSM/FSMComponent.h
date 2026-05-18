@@ -70,7 +70,7 @@ class GAMEAIPROG_API UFSMComponent : public UBrainComponent
 
 public:
 	// Sets default values for this component's properties
-	UFSMComponent(AGameAIController* AIController);
+	UFSMComponent();
 
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,

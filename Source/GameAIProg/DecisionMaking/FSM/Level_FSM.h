@@ -41,4 +41,6 @@ private:
 	UFUNCTION()
 	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
 	void SetupAgents(AGameAIController* AIController);
+	bool TransitionToPatrol();
+	void InitBlackboard(AGameAIController* AIController);
 };

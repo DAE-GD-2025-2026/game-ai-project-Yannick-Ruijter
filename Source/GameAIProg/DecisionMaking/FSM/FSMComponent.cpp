@@ -11,7 +11,7 @@ void GameAI::FSM::FSM::SetCurrentState(State const* state)
 		if (m_States[i].get() == state)
 		{
 			m_CurrentStateIndex = i;
-			m_States[i]->m_OnEnter(AIContr);
+			m_States[i]->m_OnEnter();
 			return;
 		}
 	}
@@ -22,7 +22,7 @@ void UFSMComponent::AddState(std::unique_ptr<GameAI::FSM::State>&& NewState)
 	FSMInstance->AddState(std::move(NewState));
 }
 
-void UFSMComponent::AddTransition(GameAI::FSM::State* From, GameAI::FSM::State* To, std::function<bool(AGameAIController*)> EvalFunc)
+void UFSMComponent::AddTransition(GameAI::FSM::State* From, GameAI::FSM::State* To, std::function<bool()> EvalFunc)
 {
 	FSMInstance->AddTransition(From, To, EvalFunc);
 }
@@ -34,8 +34,7 @@ void UFSMComponent::BeginPlay()
 }
 
 
-UFSMComponent::UFSMComponent(AGameAIController* AIController)
-	:AIController{AIController}
+UFSMComponent::UFSMComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
