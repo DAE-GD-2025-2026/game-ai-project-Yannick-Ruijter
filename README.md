@@ -9,3 +9,7 @@ It currently has:
 -A* pathfinding
 -navmesh navigation
 -SSFA
+-Graph Coloring
+
+## Graph Coloring -> Topic Graph Theory Week 04
+Graph coloring is an algorithm that assigns colors to the nodes of a graph such that no two adjacent (connected) nodes share the same color, using the minimum number of colors possible. 
